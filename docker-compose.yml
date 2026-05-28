@@ -7,8 +7,8 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - MONGODB_URL=mongodb://mongodb:27017
-      - MONGODB_DATABASE=energy_monitoring_db
+      - MONGODB_URL=${MONGODB_URL}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_GROUP_ID=energy-monitoring-group
       - KAFKA_TOPIC_READING_INGEST=monitoring.reading.ingest
@@ -18,25 +18,8 @@ services:
       - APP_HOST=0.0.0.0
       - APP_PORT=8001
     depends_on:
-      mongodb:
-        condition: service_healthy
       kafka:
         condition: service_healthy
-    networks:
-      - sems-network
-
-  mongodb:
-    image: mongo:7.0
-    container_name: energy-monitoring-mongodb
-    ports:
-      - "27018:27017"
-    volumes:
-      - energy_monitoring_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - sems-network
 
@@ -88,9 +71,6 @@ services:
       "
     networks:
       - sems-network
-
-volumes:
-  energy_monitoring_data:
 
 networks:
   sems-network:

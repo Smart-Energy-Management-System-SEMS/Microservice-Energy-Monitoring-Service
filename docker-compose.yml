@@ -7,14 +7,12 @@ services:
     ports:
       - "8001:8001"
     environment:
+      - SERVICE_NAME=energy-monitoring-service
+      - CONFIG_SERVICE_URL=http://config-service:8080
       - MONGODB_URL=${MONGODB_URL}
       - MONGODB_DATABASE=${MONGODB_DATABASE}
+      # Local fallback values if Config Service is unavailable
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - KAFKA_GROUP_ID=energy-monitoring-group
-      - KAFKA_TOPIC_READING_INGEST=monitoring.reading.ingest
-      - KAFKA_TOPIC_ANOMALY_DETECTED=analytics.anomaly.detected
-      - KAFKA_TOPIC_ALERT_CREATED=monitoring.alert.created
-      - KAFKA_TOPIC_READING_PROCESSED=monitoring.reading.processed
       - APP_HOST=0.0.0.0
       - APP_PORT=8001
     depends_on:

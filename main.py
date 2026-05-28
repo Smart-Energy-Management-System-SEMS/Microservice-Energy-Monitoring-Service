@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from monitoring.infrastructure.configuration.settings import settings
+from monitoring.infrastructure.configuration.config_service_client import ConfigServiceClient
 from monitoring.infrastructure.persistence.mongodb.configuration.mongodb_client import MongoDBClient
 from monitoring.infrastructure.messaging.kafka.kafka_consumer import KafkaConsumer
 from monitoring.infrastructure.messaging.kafka.kafka_producer import KafkaProducer
@@ -29,6 +30,9 @@ kafka_consumer = KafkaConsumer()
 async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle management."""
     logger.info("=== Microservice-Energy-Monitoring-Service starting up ===")
+
+    # Load non-secret distributed settings from Config Service
+    await ConfigServiceClient().load_into_settings(settings.service_name)
 
     # Initialize MongoDB connection (lazy, validates on first use)
     MongoDBClient.get_database()
@@ -71,11 +75,11 @@ app.add_middleware(
 )
 
 # Routers
-app.include_router(health_router, prefix="/api/v1")
-app.include_router(reading_router, prefix="/api/v1")
-app.include_router(consumption_router, prefix="/api/v1")
-app.include_router(alert_router, prefix="/api/v1")
-app.include_router(meter_router, prefix="/api/v1")
+app.include_router(health_router, prefix=settings.api_base_path)
+app.include_router(reading_router, prefix=settings.api_base_path)
+app.include_router(consumption_router, prefix=settings.api_base_path)
+app.include_router(alert_router, prefix=settings.api_base_path)
+app.include_router(meter_router, prefix=settings.api_base_path)
 
 if __name__ == "__main__":
     uvicorn.run(

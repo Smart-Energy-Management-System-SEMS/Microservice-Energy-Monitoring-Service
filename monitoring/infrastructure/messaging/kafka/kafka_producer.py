@@ -18,11 +18,23 @@ class KafkaProducer:
     @classmethod
     def _get_producer(cls) -> _KafkaProducer:
         if cls._instance is None:
+            kwargs = {
+                "bootstrap_servers": settings.kafka_bootstrap_servers.split(","),
+                "value_serializer": lambda v: json.dumps(v).encode("utf-8"),
+                "retries": 3,
+                "acks": "all",
+                "security_protocol": settings.kafka_security_protocol,
+            }
+            if settings.kafka_sasl_mechanism and settings.kafka_sasl_username and settings.kafka_sasl_password:
+                kwargs.update(
+                    {
+                        "sasl_mechanism": settings.kafka_sasl_mechanism,
+                        "sasl_plain_username": settings.kafka_sasl_username,
+                        "sasl_plain_password": settings.kafka_sasl_password,
+                    }
+                )
             cls._instance = _KafkaProducer(
-                bootstrap_servers=settings.kafka_bootstrap_servers.split(","),
-                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-                retries=3,
-                acks="all",
+                **kwargs,
             )
         return cls._instance
 

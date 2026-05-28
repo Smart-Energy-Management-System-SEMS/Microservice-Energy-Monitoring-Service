@@ -28,14 +28,26 @@ class KafkaConsumer:
 
     def _build_consumer(self) -> _KafkaConsumer:
         topics = list(self._handlers.keys())
+        kwargs = {
+            "bootstrap_servers": settings.kafka_bootstrap_servers.split(","),
+            "group_id": settings.kafka_group_id,
+            "auto_offset_reset": "earliest",
+            "enable_auto_commit": True,
+            "value_deserializer": lambda v: json.loads(v.decode("utf-8")) if v else None,
+            "consumer_timeout_ms": 1000,
+            "security_protocol": settings.kafka_security_protocol,
+        }
+        if settings.kafka_sasl_mechanism and settings.kafka_sasl_username and settings.kafka_sasl_password:
+            kwargs.update(
+                {
+                    "sasl_mechanism": settings.kafka_sasl_mechanism,
+                    "sasl_plain_username": settings.kafka_sasl_username,
+                    "sasl_plain_password": settings.kafka_sasl_password,
+                }
+            )
         return _KafkaConsumer(
             *topics,
-            bootstrap_servers=settings.kafka_bootstrap_servers.split(","),
-            group_id=settings.kafka_group_id,
-            auto_offset_reset="earliest",
-            enable_auto_commit=True,
-            value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
-            consumer_timeout_ms=1000,
+            **kwargs,
         )
 
     def _consume_loop(self) -> None:

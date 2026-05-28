@@ -1,7 +1,7 @@
 # Microservice-Energy-Monitoring-Service
 
-Part of the **Smart Energy Management System (SEMS)** — Startup Energix  
-Universidad Peruana de Ciencias Aplicadas · Ingeniería de Software · Ciclo 7
+Part of the **Smart Energy Management System (SEMS)** - Startup Energix  
+Universidad Peruana de Ciencias Aplicadas - Ingenieria de Software - Ciclo 7
 
 ---
 
@@ -12,14 +12,17 @@ Collects telemetry from smart meters, stores time-series data in MongoDB,
 evaluates business rules to generate alerts, and communicates with other
 microservices via Kafka.
 
+The service supports centralized runtime configuration via **Config Service**
+(`CONFIG_SERVICE_URL`) with local `.env` fallbacks.
+
 ## Architecture
 
 ```
 DDD + Hexagonal Architecture (Ports & Adapters)
-├── Domain Layer       → Entities, Commands, Queries, Value Objects, Repositories (interfaces), Domain Services
-├── Application Layer  → Command Services (CQRS write), Query Services (CQRS read), Event Handlers, Event Publisher
-├── Infrastructure     → MongoDB (Motor async), Kafka (kafka-python)
-└── Interfaces         → FastAPI REST Controllers, Resources (Pydantic), Transforms, ACL
+|- Domain Layer       -> Entities, Commands, Queries, Value Objects, Repositories (interfaces), Domain Services
+|- Application Layer  -> Command Services (CQRS write), Query Services (CQRS read), Event Handlers, Event Publisher
+|- Infrastructure     -> MongoDB (Motor async), Kafka (kafka-python), Config Service client
+`- Interfaces         -> FastAPI REST Controllers, Resources (Pydantic), Transforms, ACL
 ```
 
 ## Domain Entities
@@ -64,11 +67,38 @@ DDD + Hexagonal Architecture (Ports & Adapters)
 
 ## Tech Stack
 
-- **Python 3.11** · **FastAPI** · **Uvicorn**
+- **Python 3.12** - **FastAPI** - **Uvicorn**
 - **MongoDB** (Motor async driver)
 - **Apache Kafka** (kafka-python)
 - **Docker** + **Docker Compose**
 - **Pydantic v2** + **pydantic-settings**
+
+## Configuration Model
+
+### Variables kept in this microservice (`.env`)
+
+- `SERVICE_NAME`
+- `CONFIG_SERVICE_URL`
+- `MONGODB_URL` (secret)
+- `KAFKA_SASL_USERNAME` (secret, optional)
+- `KAFKA_SASL_PASSWORD` (secret, optional)
+- `APP_HOST`, `APP_PORT`, `APP_ENV`
+
+### Configuration expected from Config Service
+
+- `app.host`, `app.port`, `app.env`
+- `api.base_path`
+- `mongodb.database`
+- `kafka.bootstrap_servers`
+- `kafka.group_id`
+- `kafka.security_protocol`
+- `kafka.sasl_mechanism`
+- `kafka.topics.reading_ingest`
+- `kafka.topics.anomaly_detected`
+- `kafka.topics.alert_created`
+- `kafka.topics.reading_processed`
+
+If Config Service is unavailable, local env/default values are used.
 
 ## Running Locally
 
@@ -76,7 +106,7 @@ DDD + Hexagonal Architecture (Ports & Adapters)
 # 1. Copy env file
 cp .env.example .env
 
-# 2. Start infrastructure
+# 2. (Optional) Start local infra
 docker-compose up mongodb kafka -d
 
 # 3. Install dependencies
@@ -92,4 +122,11 @@ python main.py
 docker-compose up --build
 ```
 
-API docs available at: `http://localhost:8001/docs`
+API docs: `http://localhost:8001/docs`
+
+## Azure Container Apps
+
+- Store `MONGODB_URL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` as ACA Secrets.
+- Inject secrets as environment variables.
+- Point `CONFIG_SERVICE_URL` to the internal centralized Config Service URL.
+- Keep shared config (topics, bootstrap, group, route base) in Config Service.

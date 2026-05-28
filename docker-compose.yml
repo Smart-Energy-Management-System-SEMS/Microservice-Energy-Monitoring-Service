@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  energy-monitoring-service:
+    build: .
+    container_name: energy-monitoring-service
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DATABASE=energy_monitoring_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_GROUP_ID=energy-monitoring-group
+      - KAFKA_TOPIC_READING_INGEST=monitoring.reading.ingest
+      - KAFKA_TOPIC_ANOMALY_DETECTED=analytics.anomaly.detected
+      - KAFKA_TOPIC_ALERT_CREATED=monitoring.alert.created
+      - KAFKA_TOPIC_READING_PROCESSED=monitoring.reading.processed
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8001
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - sems-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: energy-monitoring-mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - energy_monitoring_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sems-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: energy-monitoring-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - sems-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: energy-monitoring-kafka
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sems-network
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: energy-monitoring-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "
+        kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --topic monitoring.reading.ingest &&
+        kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --topic analytics.anomaly.detected &&
+        kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --topic monitoring.alert.created &&
+        kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --topic monitoring.reading.processed &&
+        echo 'Topics created successfully'
+      "
+    networks:
+      - sems-network
+
+volumes:
+  energy_monitoring_data:
+
+networks:
+  sems-network:
+    driver: bridge

@@ -15,7 +15,7 @@ class ConfigServiceClient:
         self._timeout = timeout_seconds
 
     async def get_service_config(self, service_name: str) -> Dict[str, Any]:
-        endpoint = f"{self._base_url}/api/v1/config/{service_name}"
+        endpoint = f"{self._base_url}/api/v1/config/services/{service_name}"
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             response = await client.get(endpoint)
             response.raise_for_status()

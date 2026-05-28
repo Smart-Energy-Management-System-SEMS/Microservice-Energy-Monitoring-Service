@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     service_name: str = Field(default="energy-monitoring-service", env="SERVICE_NAME")
-    config_service_url: str = Field(default="http://localhost:8080", env="CONFIG_SERVICE_URL")
+    config_service_url: str = Field(default="http://localhost:8090", env="CONFIG_SERVICE_URL")
 
     # MongoDB
     mongodb_url: str = Field(default="mongodb://localhost:27017", env="MONGODB_URL")
@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8001, env="APP_PORT")
     app_env: str = Field(default="development", env="APP_ENV")
     api_base_path: str = Field(default="/api/v1", env="API_BASE_PATH")
+    cors_allow_origins: str = Field(
+        default="http://localhost:3000,http://localhost:5173",
+        env="CORS_ALLOW_ORIGINS",
+    )
 
     class Config:
         env_file = ".env"
@@ -67,6 +71,9 @@ class Settings(BaseSettings):
                 return None
             cursor = cursor[part]
         return cursor
+
+    def get_cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
 
 
 settings = Settings()

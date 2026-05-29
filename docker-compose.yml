@@ -4,17 +4,11 @@ services:
   energy-monitoring-service:
     build: .
     container_name: energy-monitoring-service
+    env_file:
+      - .env
     ports:
       - "8001:8001"
     environment:
-      - MONGODB_URL=${MONGODB_URL}
-      - MONGODB_DATABASE=${MONGODB_DATABASE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - KAFKA_GROUP_ID=energy-monitoring-group
-      - KAFKA_TOPIC_READING_INGEST=monitoring.reading.ingest
-      - KAFKA_TOPIC_ANOMALY_DETECTED=analytics.anomaly.detected
-      - KAFKA_TOPIC_ALERT_CREATED=monitoring.alert.created
-      - KAFKA_TOPIC_READING_PROCESSED=monitoring.reading.processed
       - APP_HOST=0.0.0.0
       - APP_PORT=8001
     depends_on:

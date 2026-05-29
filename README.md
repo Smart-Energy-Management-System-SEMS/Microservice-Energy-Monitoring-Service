@@ -1,6 +1,11 @@
 # Energy Monitoring Service
 
+
+Part of the **Smart Energy Management System (SEMS)** - Startup Energix  
+Universidad Peruana de Ciencias Aplicadas - Ingenieria de Software - Ciclo 7
+
 Microservicio Python para el Smart Energy Management System (SEMS). Gestiona lecturas de energía, consumo por dispositivo, alertas de consumo y medidores inteligentes usando DDD + Arquitectura Hexagonal, FastAPI, Motor, MongoDB Atlas y Apache Kafka.
+
 
 ## Stack
 
@@ -13,7 +18,14 @@ Microservicio Python para el Smart Energy Management System (SEMS). Gestiona lec
 
 ## Variables de entorno
 
+
+The service supports centralized runtime configuration via **Config Service**
+(`CONFIG_SERVICE_URL`) with local `.env` fallbacks.
+
+## Architecture
+
 Copia `.env.example` a `.env` y coloca tu cadena real de MongoDB Atlas. No ejecutes el servicio con el placeholder `<usuario>:<password>@<cluster>`, porque las credenciales deben ser reales.
+
 
 ```env
 MONGODB_URL=mongodb+srv://sems_user:l61aYxpaTAZzVZsK@sems-cluster.vmdntbg.mongodb.net/?appName=SEMS-Cluster
@@ -29,6 +41,13 @@ APP_PORT=8001
 APP_ENV=development
 ```
 
+DDD + Hexagonal Architecture (Ports & Adapters)
+|- Domain Layer       -> Entities, Commands, Queries, Value Objects, Repositories (interfaces), Domain Services
+|- Application Layer  -> Command Services (CQRS write), Query Services (CQRS read), Event Handlers, Event Publisher
+|- Infrastructure     -> MongoDB (Motor async), Kafka (kafka-python), Config Service client
+`- Interfaces         -> FastAPI REST Controllers, Resources (Pydantic), Transforms, ACL
+
+
 ## Ejecutar localmente
 
 ```bash
@@ -40,6 +59,7 @@ pip install -r requirements.txt
 
 # 3. Correr el servicio
 python main.py
+
 ```
 
 El servicio arranca por defecto en:
@@ -56,13 +76,68 @@ http://localhost:8001/docs
 
 Health check:
 
+
+- **Python 3.12** - **FastAPI** - **Uvicorn**
+- **MongoDB** (Motor async driver)
+- **Apache Kafka** (kafka-python)
+- **Docker** + **Docker Compose**
+- **Pydantic v2** + **pydantic-settings**
+
+## Configuration Model
+
+### Variables kept in this microservice (`.env` / `.env.docker`)
+
+- `SERVICE_NAME`
+- `CONFIG_SERVICE_URL`
+- `MONGODB_URL` (secret)
+- `KAFKA_SASL_USERNAME` (secret, optional)
+- `KAFKA_SASL_PASSWORD` (secret, optional)
+- `APP_HOST`, `APP_PORT`, `APP_ENV`
+
+### Configuration expected from Config Service
+
+- `app.host`, `app.port`, `app.env`
+- `api.base_path`
+- `mongodb.database`
+- `kafka.bootstrap_servers`
+- `kafka.group_id`
+- `kafka.security_protocol`
+- `kafka.sasl_mechanism`
+- `kafka.topics.reading_ingest`
+- `kafka.topics.anomaly_detected`
+- `kafka.topics.alert_created`
+- `kafka.topics.reading_processed`
+
+If Config Service is unavailable, local env/default values are used.
+
+### Local vs Docker Kafka Bootstrap
+
+- Local run (`python main.py` / PyCharm): use `KAFKA_BOOTSTRAP_SERVERS=localhost:9093`
+- Docker run (`docker-compose`): use `KAFKA_BOOTSTRAP_SERVERS=kafka:9092`
+
+## Running Locally
+
 ```
 GET /api/v1/health
 ```
 
 Si Kafka no está disponible en local, el servicio lo detecta y continúa sin publicar eventos. Los endpoints REST siguen funcionando con normalidad.
 
+
 ## Docker
+
+
+# 2. For local host execution, set:
+# KAFKA_BOOTSTRAP_SERVERS=localhost:9093
+
+# 3. (Optional) Start local infra
+docker-compose up mongodb kafka -d
+
+# 4. Install dependencies
+pip install -r requirements.txt
+
+# 5. Run the service
+python main.py
 
 El proyecto incluye `Dockerfile`, `.dockerignore` y `docker-compose.yml`.
 
@@ -113,6 +188,18 @@ GET    /api/v1/device-consumptions/{consumption_id}
 GET    /api/v1/device-consumptions/user/{user_id}
 GET    /api/v1/device-consumptions/user/{user_id}/top
 ```
+
+
+`docker-compose.yml` uses `.env.docker` for container runtime configuration.
+
+API docs: `http://localhost:8001/docs`
+
+## Azure Container Apps
+
+- Store `MONGODB_URL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` as ACA Secrets.
+- Inject secrets as environment variables.
+- Point `CONFIG_SERVICE_URL` to the internal centralized Config Service URL.
+- Keep shared config (topics, bootstrap, group, route base) in Config Service.
 
 ### Consumption Alerts
 

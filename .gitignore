@@ -14,9 +14,7 @@ dist/
 build/
 
 # IDE
-.idea/
 .vscode/
-*.iml
 
 # Logs
 *.log

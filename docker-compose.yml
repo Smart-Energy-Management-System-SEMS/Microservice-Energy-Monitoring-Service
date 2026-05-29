@@ -4,15 +4,11 @@ services:
   energy-monitoring-service:
     build: .
     container_name: energy-monitoring-service
+    env_file:
+      - .env
     ports:
       - "8001:8001"
     environment:
-      - SERVICE_NAME=energy-monitoring-service
-      - CONFIG_SERVICE_URL=http://config-service:8080
-      - MONGODB_URL=${MONGODB_URL}
-      - MONGODB_DATABASE=${MONGODB_DATABASE}
-      # Local fallback values if Config Service is unavailable
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - APP_HOST=0.0.0.0
       - APP_PORT=8001
     depends_on:

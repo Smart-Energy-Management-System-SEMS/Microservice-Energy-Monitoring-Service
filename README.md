@@ -75,7 +75,7 @@ DDD + Hexagonal Architecture (Ports & Adapters)
 
 ## Configuration Model
 
-### Variables kept in this microservice (`.env`)
+### Variables kept in this microservice (`.env` / `.env.docker`)
 
 - `SERVICE_NAME`
 - `CONFIG_SERVICE_URL`
@@ -100,19 +100,27 @@ DDD + Hexagonal Architecture (Ports & Adapters)
 
 If Config Service is unavailable, local env/default values are used.
 
+### Local vs Docker Kafka Bootstrap
+
+- Local run (`python main.py` / PyCharm): use `KAFKA_BOOTSTRAP_SERVERS=localhost:9093`
+- Docker run (`docker-compose`): use `KAFKA_BOOTSTRAP_SERVERS=kafka:9092`
+
 ## Running Locally
 
 ```bash
 # 1. Copy env file
 cp .env.example .env
 
-# 2. (Optional) Start local infra
+# 2. For local host execution, set:
+# KAFKA_BOOTSTRAP_SERVERS=localhost:9093
+
+# 3. (Optional) Start local infra
 docker-compose up mongodb kafka -d
 
-# 3. Install dependencies
+# 4. Install dependencies
 pip install -r requirements.txt
 
-# 4. Run the service
+# 5. Run the service
 python main.py
 ```
 
@@ -121,6 +129,8 @@ python main.py
 ```bash
 docker-compose up --build
 ```
+
+`docker-compose.yml` uses `.env.docker` for container runtime configuration.
 
 API docs: `http://localhost:8001/docs`
 

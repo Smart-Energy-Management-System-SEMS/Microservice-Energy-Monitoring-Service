@@ -1,3 +1,5 @@
+import os
+
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
@@ -42,6 +44,7 @@ class Settings(BaseSettings):
         """
         Applies runtime config values received from Config Service.
         Missing fields keep local env/default values.
+        Explicit environment variables always take precedence over remote config.
         """
         mapping = {
             "app.host": "app_host",
@@ -58,7 +61,25 @@ class Settings(BaseSettings):
             "kafka.topics.alert_created": "kafka_topic_alert_created",
             "kafka.topics.reading_processed": "kafka_topic_reading_processed",
         }
+        env_by_attr = {
+            "app_host": "APP_HOST",
+            "app_port": "APP_PORT",
+            "app_env": "APP_ENV",
+            "api_base_path": "API_BASE_PATH",
+            "mongodb_database": "MONGODB_DATABASE",
+            "kafka_bootstrap_servers": "KAFKA_BOOTSTRAP_SERVERS",
+            "kafka_group_id": "KAFKA_GROUP_ID",
+            "kafka_security_protocol": "KAFKA_SECURITY_PROTOCOL",
+            "kafka_sasl_mechanism": "KAFKA_SASL_MECHANISM",
+            "kafka_topic_reading_ingest": "KAFKA_TOPIC_READING_INGEST",
+            "kafka_topic_anomaly_detected": "KAFKA_TOPIC_ANOMALY_DETECTED",
+            "kafka_topic_alert_created": "KAFKA_TOPIC_ALERT_CREATED",
+            "kafka_topic_reading_processed": "KAFKA_TOPIC_READING_PROCESSED",
+        }
         for source_key, target_attr in mapping.items():
+            env_name = env_by_attr.get(target_attr)
+            if env_name and os.getenv(env_name) not in (None, ""):
+                continue
             value = self._get_nested(config, source_key)
             if value is not None:
                 setattr(self, target_attr, value)

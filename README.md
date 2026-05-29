@@ -16,7 +16,7 @@ Microservicio Python para el Smart Energy Management System (SEMS). Gestiona lec
 Copia `.env.example` a `.env` y coloca tu cadena real de MongoDB Atlas. No ejecutes el servicio con el placeholder `<usuario>:<password>@<cluster>`, porque las credenciales deben ser reales.
 
 ```env
-MONGODB_URL=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority&appName=SEMS
+MONGODB_URL=mongodb+srv://sems_user:l61aYxpaTAZzVZsK@sems-cluster.vmdntbg.mongodb.net/?appName=SEMS-Cluster
 MONGODB_DATABASE=energy_monitoring_db
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 KAFKA_GROUP_ID=energy-monitoring-group

@@ -1,21 +1,27 @@
 import os
 
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import AliasChoices, Field
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     service_name: str = Field(default="energy-monitoring-service", env="SERVICE_NAME")
-    config_service_url: str = Field(default="http://localhost:8090", env="CONFIG_SERVICE_URL")
+    config_service_url: str = Field(default="", env="CONFIG_SERVICE_URL")
 
     # MongoDB
-    mongodb_url: str = Field(default="mongodb://localhost:27017", env="MONGODB_URL")
+    mongodb_url: str = Field(
+        default="mongodb://localhost:27017",
+        validation_alias=AliasChoices("MONGODB_URL", "MONGODB_URI", "DATABASE_URL"),
+    )
     mongodb_database: str = Field(default="energy_monitoring_db", env="MONGODB_DATABASE")
 
     # Kafka
-    kafka_bootstrap_servers: str = Field(default="localhost:9092", env="KAFKA_BOOTSTRAP_SERVERS")
+    kafka_bootstrap_servers: str = Field(
+        default="localhost:9092",
+        validation_alias=AliasChoices("KAFKA_BOOTSTRAP_SERVERS", "KAFKA_BROKERS"),
+    )
     kafka_group_id: str = Field(default="energy-monitoring-group", env="KAFKA_GROUP_ID")
     kafka_topic_reading_ingest: str = Field(default="monitoring.reading.ingest", env="KAFKA_TOPIC_READING_INGEST")
     kafka_topic_anomaly_detected: str = Field(default="analytics.anomaly.detected", env="KAFKA_TOPIC_ANOMALY_DETECTED")
@@ -23,13 +29,19 @@ class Settings(BaseSettings):
     kafka_topic_reading_processed: str = Field(default="monitoring.reading.processed", env="KAFKA_TOPIC_READING_PROCESSED")
     kafka_security_protocol: str = Field(default="PLAINTEXT", env="KAFKA_SECURITY_PROTOCOL")
     kafka_sasl_mechanism: str | None = Field(default=None, env="KAFKA_SASL_MECHANISM")
-    kafka_sasl_username: str | None = Field(default=None, env="KAFKA_SASL_USERNAME")
-    kafka_sasl_password: str | None = Field(default=None, env="KAFKA_SASL_PASSWORD")
+    kafka_sasl_username: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("KAFKA_SASL_USERNAME", "KAFKA_USERNAME"),
+    )
+    kafka_sasl_password: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("KAFKA_SASL_PASSWORD", "KAFKA_PASSWORD"),
+    )
 
     # App
     app_host: str = Field(default="0.0.0.0", env="APP_HOST")
-    app_port: int = Field(default=8001, env="APP_PORT")
-    app_env: str = Field(default="development", env="APP_ENV")
+    app_port: int = Field(default=8080, validation_alias=AliasChoices("PORT", "APP_PORT"))
+    app_env: str = Field(default="development", validation_alias=AliasChoices("APP_ENV", "ENVIRONMENT"))
     api_base_path: str = Field(default="/api/v1", env="API_BASE_PATH")
     cors_allow_origins: str = Field(
         default="http://localhost:3000,http://localhost:5173",
@@ -62,23 +74,23 @@ class Settings(BaseSettings):
             "kafka.topics.reading_processed": "kafka_topic_reading_processed",
         }
         env_by_attr = {
-            "app_host": "APP_HOST",
-            "app_port": "APP_PORT",
-            "app_env": "APP_ENV",
-            "api_base_path": "API_BASE_PATH",
-            "mongodb_database": "MONGODB_DATABASE",
-            "kafka_bootstrap_servers": "KAFKA_BOOTSTRAP_SERVERS",
-            "kafka_group_id": "KAFKA_GROUP_ID",
-            "kafka_security_protocol": "KAFKA_SECURITY_PROTOCOL",
-            "kafka_sasl_mechanism": "KAFKA_SASL_MECHANISM",
-            "kafka_topic_reading_ingest": "KAFKA_TOPIC_READING_INGEST",
-            "kafka_topic_anomaly_detected": "KAFKA_TOPIC_ANOMALY_DETECTED",
-            "kafka_topic_alert_created": "KAFKA_TOPIC_ALERT_CREATED",
-            "kafka_topic_reading_processed": "KAFKA_TOPIC_READING_PROCESSED",
+            "app_host": ("APP_HOST",),
+            "app_port": ("PORT", "APP_PORT"),
+            "app_env": ("APP_ENV", "ENVIRONMENT"),
+            "api_base_path": ("API_BASE_PATH",),
+            "mongodb_database": ("MONGODB_DATABASE",),
+            "kafka_bootstrap_servers": ("KAFKA_BROKERS", "KAFKA_BOOTSTRAP_SERVERS"),
+            "kafka_group_id": ("KAFKA_GROUP_ID",),
+            "kafka_security_protocol": ("KAFKA_SECURITY_PROTOCOL",),
+            "kafka_sasl_mechanism": ("KAFKA_SASL_MECHANISM",),
+            "kafka_topic_reading_ingest": ("KAFKA_TOPIC_READING_INGEST",),
+            "kafka_topic_anomaly_detected": ("KAFKA_TOPIC_ANOMALY_DETECTED",),
+            "kafka_topic_alert_created": ("KAFKA_TOPIC_ALERT_CREATED",),
+            "kafka_topic_reading_processed": ("KAFKA_TOPIC_READING_PROCESSED",),
         }
         for source_key, target_attr in mapping.items():
-            env_name = env_by_attr.get(target_attr)
-            if env_name and os.getenv(env_name) not in (None, ""):
+            env_names = env_by_attr.get(target_attr, ())
+            if any(os.getenv(name) not in (None, "") for name in env_names):
                 continue
             value = self._get_nested(config, source_key)
             if value is not None:

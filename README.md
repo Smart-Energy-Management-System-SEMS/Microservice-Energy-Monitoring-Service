@@ -2,6 +2,8 @@
 
 Microservicio Python del proyecto SEMS. Expone endpoints REST con FastAPI, consume/publica eventos en Kafka y usa MongoDB.
 
+Incluye una simulacion interna para EOS IoT y Plus Energia. No hace llamadas reales a sistemas externos: genera telemetria por `device_id`, guarda lecturas en MongoDB y publica eventos Kafka.
+
 ## Requisitos
 
 - Python 3.12+
@@ -22,6 +24,7 @@ KAFKA_PASSWORD=
 DATABASE_URL=
 MONGODB_URI=
 ENVIRONMENT=production
+KAFKA_TOPIC_ENERGY_READING_CREATED=energy.reading.created
 ```
 
 Notas:
@@ -47,6 +50,64 @@ Health check:
 
 ```text
 GET /api/v1/health
+```
+
+## Endpoints de simulacion
+
+Generar lectura simulada:
+
+```http
+POST /api/v1/energy/simulation/readings
+Content-Type: application/json
+
+{
+  "user_id": "user_001",
+  "device_id": "device_001"
+}
+```
+
+Consultar consumo actual por dispositivo:
+
+```text
+GET /api/v1/energy/devices/device_001/consumption/current
+```
+
+Consultar historial por dispositivo:
+
+```text
+GET /api/v1/energy/devices/device_001/consumption/history
+```
+
+Consultar precio actual:
+
+```text
+GET /api/v1/energy/pricing/current
+```
+
+Respuesta esperada del pricing mock:
+
+```json
+{
+  "provider": "Plus Energia",
+  "price_per_kwh": 0.82,
+  "currency": "PEN"
+}
+```
+
+Evento Kafka publicado al generar una lectura:
+
+```json
+{
+  "event_id": "uuid",
+  "event_type": "energy.reading.created",
+  "user_id": "user_001",
+  "device_id": "device_001",
+  "power_watts": 850,
+  "energy_kwh": 1.25,
+  "estimated_cost": 0.94,
+  "currency": "PEN",
+  "timestamp": "2026-06-02T20:15:00+00:00"
+}
 ```
 
 ## Docker

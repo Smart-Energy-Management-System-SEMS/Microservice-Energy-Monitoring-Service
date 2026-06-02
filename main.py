@@ -13,6 +13,7 @@ from monitoring.application.eventhandlers.monitoring_event_handler import Monito
 
 from monitoring.interfaces.rest.controllers.health_controller import router as health_router
 from monitoring.interfaces.rest.controllers.energy_reading_controller import router as reading_router
+from monitoring.interfaces.rest.controllers.energy_simulation_controller import router as energy_simulation_router
 from monitoring.interfaces.rest.controllers.device_consumption_controller import router as consumption_router
 from monitoring.interfaces.rest.controllers.consumption_alert_controller import router as alert_router
 from monitoring.interfaces.rest.controllers.energy_meter_controller import router as meter_router
@@ -76,6 +77,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(health_router, prefix=settings.api_base_path)
+app.include_router(energy_simulation_router, prefix=settings.api_base_path)
 app.include_router(reading_router, prefix=settings.api_base_path)
 app.include_router(consumption_router, prefix=settings.api_base_path)
 app.include_router(alert_router, prefix=settings.api_base_path)

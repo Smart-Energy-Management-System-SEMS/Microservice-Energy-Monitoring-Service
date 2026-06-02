@@ -41,7 +41,6 @@ class EnergyReadingCommandService:
         # Evaluate rules and publish alert if needed
         alert = self._rule_service.evaluate_reading(saved_reading)
         if alert:
-            self._event_publisher.publish_reading_processed(saved_reading)
             logger.warning(f"Alert triggered for reading {saved_reading.id}: {alert.alert_type}")
 
         self._event_publisher.publish_reading_processed(saved_reading)

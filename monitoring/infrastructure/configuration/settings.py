@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     kafka_topic_anomaly_detected: str = Field(default="analytics.anomaly.detected", env="KAFKA_TOPIC_ANOMALY_DETECTED")
     kafka_topic_alert_created: str = Field(default="monitoring.alert.created", env="KAFKA_TOPIC_ALERT_CREATED")
     kafka_topic_reading_processed: str = Field(default="monitoring.reading.processed", env="KAFKA_TOPIC_READING_PROCESSED")
+    kafka_topic_energy_reading_created: str = Field(
+        default="energy.reading.created",
+        env="KAFKA_TOPIC_ENERGY_READING_CREATED",
+    )
     kafka_security_protocol: str = Field(default="PLAINTEXT", env="KAFKA_SECURITY_PROTOCOL")
     kafka_sasl_mechanism: str | None = Field(default=None, env="KAFKA_SASL_MECHANISM")
     kafka_sasl_username: str | None = Field(
@@ -72,6 +76,7 @@ class Settings(BaseSettings):
             "kafka.topics.anomaly_detected": "kafka_topic_anomaly_detected",
             "kafka.topics.alert_created": "kafka_topic_alert_created",
             "kafka.topics.reading_processed": "kafka_topic_reading_processed",
+            "kafka.topics.energy_reading_created": "kafka_topic_energy_reading_created",
         }
         env_by_attr = {
             "app_host": ("APP_HOST",),
@@ -87,6 +92,7 @@ class Settings(BaseSettings):
             "kafka_topic_anomaly_detected": ("KAFKA_TOPIC_ANOMALY_DETECTED",),
             "kafka_topic_alert_created": ("KAFKA_TOPIC_ALERT_CREATED",),
             "kafka_topic_reading_processed": ("KAFKA_TOPIC_READING_PROCESSED",),
+            "kafka_topic_energy_reading_created": ("KAFKA_TOPIC_ENERGY_READING_CREATED",),
         }
         for source_key, target_attr in mapping.items():
             env_names = env_by_attr.get(target_attr, ())

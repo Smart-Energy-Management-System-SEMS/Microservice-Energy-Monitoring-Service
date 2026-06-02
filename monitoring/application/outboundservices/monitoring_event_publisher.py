@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime
 from monitoring.domain.model.entities.energy_reading import EnergyReading
@@ -30,6 +29,27 @@ class MonitoringEventPublisher:
         }
         KafkaProducer.publish(settings.kafka_topic_reading_processed, event)
         logger.info(f"Published EnergyReadingProcessed for reading_id={reading.id}")
+
+    def publish_energy_reading_created(
+        self,
+        event_id: str,
+        reading: EnergyReading,
+        estimated_cost: float,
+        currency: str,
+    ) -> None:
+        event = {
+            "event_id": event_id,
+            "event_type": "energy.reading.created",
+            "user_id": reading.user_id,
+            "device_id": reading.device_id,
+            "power_watts": reading.power_watts,
+            "energy_kwh": reading.energy_kwh,
+            "estimated_cost": estimated_cost,
+            "currency": currency,
+            "timestamp": reading.timestamp.isoformat() if reading.timestamp else None,
+        }
+        KafkaProducer.publish(settings.kafka_topic_energy_reading_created, event)
+        logger.info(f"Published energy.reading.created for reading_id={reading.id}")
 
     def publish_alert_created(self, alert: ConsumptionAlert) -> None:
         """Publish an event when a consumption alert has been created."""

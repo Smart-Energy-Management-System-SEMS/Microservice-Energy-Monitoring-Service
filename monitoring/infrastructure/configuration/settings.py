@@ -1,3 +1,5 @@
+# Infrastructure layer: all the app configuration in one place.
+# Values come from environment variables (or defaults if they are missing).
 import os
 
 from pydantic_settings import BaseSettings
@@ -5,7 +7,7 @@ from pydantic import AliasChoices, Field
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
+    """All the settings the app needs (database, Kafka, server, etc.)."""
 
     service_name: str = Field(default="energy-monitoring-service", env="SERVICE_NAME")
     config_service_url: str = Field(default="", env="CONFIG_SERVICE_URL")
@@ -57,10 +59,10 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
 
     def apply_remote_config(self, config: dict) -> None:
-        """
-        Applies runtime config values received from Config Service.
-        Missing fields keep local env/default values.
-        Explicit environment variables always take precedence over remote config.
+        """Update settings with values sent by the Config Service.
+
+        Rule: if a real environment variable exists, we keep it and ignore
+        the remote value (the local environment always wins).
         """
         mapping = {
             "app.host": "app_host",
@@ -104,6 +106,7 @@ class Settings(BaseSettings):
 
     @staticmethod
     def _get_nested(data: dict, path: str):
+        # Read a value from a nested dict using a dotted path like "kafka.group_id".
         cursor = data
         for part in path.split("."):
             if not isinstance(cursor, dict) or part not in cursor:
@@ -112,6 +115,7 @@ class Settings(BaseSettings):
         return cursor
 
     def get_cors_origins(self) -> list[str]:
+        """Turn the comma-separated CORS string into a clean list of URLs."""
         return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
 
 

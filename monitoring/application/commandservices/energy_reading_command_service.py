@@ -1,3 +1,5 @@
+# Application layer: this service handles the "write" actions for readings.
+# It connects the web layer with the domain rules and the database.
 import logging
 from monitoring.domain.model.commands.create_energy_reading_command import CreateEnergyReadingCommand
 from monitoring.domain.model.entities.energy_reading import EnergyReading
@@ -9,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class EnergyReadingCommandService:
-    """Application service for handling energy reading write operations."""
+    """Creates new readings and reacts to them (alerts, events)."""
 
     def __init__(
         self,
@@ -17,11 +19,13 @@ class EnergyReadingCommandService:
         rule_service: MonitoringRuleService,
         event_publisher: MonitoringEventPublisher,
     ):
+        # We receive what we need from outside (dependency injection).
         self._reading_repo = reading_repo
         self._rule_service = rule_service
         self._event_publisher = event_publisher
 
     async def handle_create(self, command: CreateEnergyReadingCommand) -> EnergyReading:
+        """Build a reading, save it, check the rules and publish an event."""
         reading = EnergyReading(
             user_id=command.user_id,
             meter_id=command.meter_id,

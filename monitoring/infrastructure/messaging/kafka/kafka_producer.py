@@ -18,8 +18,9 @@ class KafkaProducer:
     @classmethod
     def _get_producer(cls) -> _KafkaProducer:
         if cls._instance is None:
+            logger.info("Initializing Kafka producer. bootstrap_servers=%s", settings.get_kafka_bootstrap_servers())
             kwargs = {
-                "bootstrap_servers": settings.kafka_bootstrap_servers.split(","),
+                "bootstrap_servers": settings.get_kafka_bootstrap_servers(),
                 "value_serializer": lambda v: json.dumps(v).encode("utf-8"),
                 "retries": 3,
                 "acks": "all",
@@ -39,7 +40,7 @@ class KafkaProducer:
         return cls._instance
 
     @classmethod
-    def publish(cls, topic: str, message: dict) -> None:
+    def publish(cls, topic: str, message: dict) -> bool:
         """
         Publish a message dict to the given Kafka topic.
         Logs the result and handles errors gracefully.
@@ -52,10 +53,12 @@ class KafkaProducer:
                 f"Message published to topic '{record_metadata.topic}' "
                 f"[partition={record_metadata.partition}, offset={record_metadata.offset}]"
             )
+            return True
         except KafkaError as e:
             logger.error(f"Failed to publish message to topic '{topic}': {e}", exc_info=True)
         except Exception as e:
             logger.error(f"Unexpected error publishing to topic '{topic}': {e}", exc_info=True)
+        return False
 
     @classmethod
     def close(cls) -> None:

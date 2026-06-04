@@ -11,12 +11,12 @@ Incluye una simulacion interna para EOS IoT y Plus Energia. No hace llamadas rea
 
 ## Variables de entorno
 
-Usa `.env.example` como base. Variables principales para local/Azure:
+Usa `.env.example` como base. Variables principales para local/Docker/Azure:
 
 ```env
 PORT=8080
 CONFIG_SERVICE_URL=
-KAFKA_BROKERS=localhost:9092
+KAFKA_BROKERS=localhost:29092
 KAFKA_SECURITY_PROTOCOL=
 KAFKA_SASL_MECHANISM=
 KAFKA_USERNAME=
@@ -28,9 +28,11 @@ KAFKA_TOPIC_ENERGY_READING_CREATED=energy.reading.created
 ```
 
 Notas:
-- En local puedes mantener `KAFKA_BROKERS=localhost:9092`.
+- Si corres `python main.py` en tu host y Kafka en `docker-compose`, usa `KAFKA_BROKERS=localhost:29092`.
+- Si corres este micro dentro de `docker-compose`, usa `KAFKA_BROKERS=kafka:9092`.
 - En Azure Container Apps no uses `localhost` para servicios externos (Kafka, Config Service, MongoDB).
 - El servicio acepta aliases legacy (`APP_PORT`, `APP_ENV`, `KAFKA_BOOTSTRAP_SERVERS`, `MONGODB_URL`, etc.) para compatibilidad.
+- Al arrancar, el servicio intenta crear automaticamente los topics Kafka que necesita.
 
 ## Ejecucion local
 
@@ -111,6 +113,23 @@ Evento Kafka publicado al generar una lectura:
 ```
 
 ## Docker
+
+Con `docker-compose.yml`:
+
+```bash
+docker compose up -d kafka zookeeper kafka-init
+```
+
+El compose deja Kafka accesible de dos formas:
+- `localhost:29092` para procesos que corren en tu host.
+- `kafka:9092` para contenedores dentro de la misma red Docker.
+
+Ademas, el micro intenta asegurar estos topics al iniciar:
+- `monitoring.reading.ingest`
+- `analytics.anomaly.detected`
+- `monitoring.alert.created`
+- `monitoring.reading.processed`
+- `energy.reading.created`
 
 Construir imagen:
 

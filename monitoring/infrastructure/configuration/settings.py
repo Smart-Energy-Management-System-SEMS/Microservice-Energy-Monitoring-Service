@@ -114,5 +114,18 @@ class Settings(BaseSettings):
     def get_cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
 
+    def get_kafka_bootstrap_servers(self) -> list[str]:
+        return [server.strip() for server in self.kafka_bootstrap_servers.split(",") if server.strip()]
+
+    def get_kafka_topics(self) -> list[str]:
+        topics = [
+            self.kafka_topic_reading_ingest,
+            self.kafka_topic_anomaly_detected,
+            self.kafka_topic_alert_created,
+            self.kafka_topic_reading_processed,
+            self.kafka_topic_energy_reading_created,
+        ]
+        return list(dict.fromkeys(topic for topic in topics if topic))
+
 
 settings = Settings()

@@ -27,8 +27,8 @@ class MonitoringEventPublisher:
             "timestamp": reading.timestamp.isoformat() if reading.timestamp else None,
             "occurred_at": datetime.utcnow().isoformat(),
         }
-        KafkaProducer.publish(settings.kafka_topic_reading_processed, event)
-        logger.info(f"Published EnergyReadingProcessed for reading_id={reading.id}")
+        if KafkaProducer.publish(settings.kafka_topic_reading_processed, event):
+            logger.info(f"Published EnergyReadingProcessed for reading_id={reading.id}")
 
     def publish_energy_reading_created(
         self,
@@ -48,8 +48,8 @@ class MonitoringEventPublisher:
             "currency": currency,
             "timestamp": reading.timestamp.isoformat() if reading.timestamp else None,
         }
-        KafkaProducer.publish(settings.kafka_topic_energy_reading_created, event)
-        logger.info(f"Published energy.reading.created for reading_id={reading.id}")
+        if KafkaProducer.publish(settings.kafka_topic_energy_reading_created, event):
+            logger.info(f"Published energy.reading.created for reading_id={reading.id}")
 
     def publish_alert_created(self, alert: ConsumptionAlert) -> None:
         """Publish an event when a consumption alert has been created."""
@@ -66,5 +66,5 @@ class MonitoringEventPublisher:
             "threshold_value": alert.threshold_value,
             "occurred_at": datetime.utcnow().isoformat(),
         }
-        KafkaProducer.publish(settings.kafka_topic_alert_created, event)
-        logger.info(f"Published ConsumptionAlertCreated for alert_id={alert.id}")
+        if KafkaProducer.publish(settings.kafka_topic_alert_created, event):
+            logger.info(f"Published ConsumptionAlertCreated for alert_id={alert.id}")

@@ -9,6 +9,7 @@ from monitoring.infrastructure.configuration.config_service_client import Config
 from monitoring.infrastructure.persistence.mongodb.configuration.mongodb_client import MongoDBClient
 from monitoring.infrastructure.messaging.kafka.kafka_consumer import KafkaConsumer
 from monitoring.infrastructure.messaging.kafka.kafka_producer import KafkaProducer
+from monitoring.infrastructure.messaging.kafka.kafka_topic_initializer import KafkaTopicInitializer
 from monitoring.application.eventhandlers.monitoring_event_handler import MonitoringEventHandler
 
 from monitoring.interfaces.rest.controllers.health_controller import router as health_router
@@ -38,6 +39,13 @@ async def lifespan(app: FastAPI):
     # Initialize MongoDB connection (lazy, validates on first use)
     MongoDBClient.get_database()
     logger.info("MongoDB client initialized.")
+
+    logger.info(
+        "Kafka configuration resolved. bootstrap_servers=%s topics=%s",
+        settings.get_kafka_bootstrap_servers(),
+        settings.get_kafka_topics(),
+    )
+    KafkaTopicInitializer.ensure_topics_exist()
 
     # Register and start Kafka consumer
     event_handler = MonitoringEventHandler(kafka_consumer)

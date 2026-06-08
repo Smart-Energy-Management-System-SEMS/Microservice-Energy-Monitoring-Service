@@ -26,10 +26,15 @@ class EnergySimulationCommandService:
         self._reading_command_service = reading_command_service
         self._event_publisher = event_publisher
 
-    async def generate_reading(self, user_id: str, device_id: str) -> tuple[EnergyReading, EnergyPrice, float]:
+    async def generate_reading(
+        self,
+        user_id: str,
+        device_id: str,
+        device_type: str = "unknown",
+    ) -> tuple[EnergyReading, EnergyPrice, float]:
         """Make a fake reading, save it, and return it with the price and cost."""
         # 1) Ask the fake IoT provider for telemetry and the current price.
-        telemetry = await self._eos_provider.generate_reading(device_id)
+        telemetry = await self._eos_provider.generate_reading(device_id, device_type=device_type)
         price = await self._pricing_provider.get_current_price()
 
         reading = await self._reading_command_service.handle_create(

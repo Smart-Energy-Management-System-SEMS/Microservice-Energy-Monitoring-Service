@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class SimulateEnergyReadingRequest(BaseModel):
     user_id: str
     device_id: str
+    device_type: str = "unknown"
 
 
 class EnergyPricingResponse(BaseModel):

@@ -26,6 +26,7 @@ async def generate_simulated_reading(
     reading, price, estimated_cost = await command_service.generate_reading(
         user_id=request.user_id,
         device_id=request.device_id,
+        device_type=request.device_type,
     )
     return EnergySimulationTransform.to_reading_response(reading, price, estimated_cost)
 

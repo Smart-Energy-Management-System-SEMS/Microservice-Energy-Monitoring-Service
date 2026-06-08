@@ -7,5 +7,5 @@ class EosIotProvider(ABC):
     """Port for obtaining telemetry from EOS IoT."""
 
     @abstractmethod
-    async def generate_reading(self, device_id: str) -> SimulatedEnergyTelemetry:
+    async def generate_reading(self, device_id: str, device_type: str = "unknown") -> SimulatedEnergyTelemetry:
         pass

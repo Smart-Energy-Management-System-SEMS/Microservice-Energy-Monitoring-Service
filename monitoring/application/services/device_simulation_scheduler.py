@@ -75,6 +75,7 @@ class DeviceSimulationScheduler:
                 reading, _, estimated_cost = await self._simulation_command_service.generate_reading(
                     user_id=registration.user_id,
                     device_id=registration.device_id,
+                    device_type=registration.device_type,
                 )
                 logger.info(
                     "Simulated reading generated for device_id=%s type=%s power_watts=%.2f energy_kwh=%.3f estimated_cost=%.2f",
@@ -96,4 +97,3 @@ class DeviceSimulationScheduler:
         current = self._tasks.get(device_id)
         if current is task:
             self._tasks.pop(device_id, None)
-

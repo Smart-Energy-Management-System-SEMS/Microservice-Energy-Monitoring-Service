@@ -39,6 +39,12 @@ class Settings(BaseSettings):
             "KAFKA_TOPIC_ANOMALY_DETECTED",
         ),
     )
+    kafka_topic_device_registered: str = Field(
+        default="device.registered",
+        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_DEVICE_REGISTERED",
+        ),
+    )
     kafka_topic_energy_consumption_recorded: str = Field(
         default="energy.consumption.recorded",
         validation_alias=AliasChoices("KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED"),
@@ -77,6 +83,10 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8080, validation_alias=AliasChoices("PORT", "APP_PORT"))
     app_env: str = Field(default="development", validation_alias=AliasChoices("APP_ENV", "ENVIRONMENT"))
     api_base_path: str = Field(default="/api/v1", env="API_BASE_PATH")
+    device_simulation_interval_seconds: int = Field(
+        default=3600,
+        validation_alias=AliasChoices("DEVICE_SIMULATION_INTERVAL_SECONDS"),
+    )
     cors_allow_origins: str = Field(
         default="http://localhost:3000,http://localhost:5173",
         env="CORS_ALLOW_ORIGINS",
@@ -104,6 +114,7 @@ class Settings(BaseSettings):
             "kafka.sasl_mechanism": "kafka_sasl_mechanism",
             "kafka.topics.reading_ingest": "kafka_topic_reading_ingest",
             "kafka.topics.anomaly_detected": "kafka_topic_anomaly_detected",
+            "kafka.topics.device_registered": "kafka_topic_device_registered",
             "kafka.topics.energy_consumption_recorded": "kafka_topic_energy_consumption_recorded",
             "kafka.topics.alert_created": "kafka_topic_alert_created",
             "kafka.topics.reading_processed": "kafka_topic_reading_processed",
@@ -127,6 +138,7 @@ class Settings(BaseSettings):
                 "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
                 "KAFKA_TOPIC_ANOMALY_DETECTED",
             ),
+            "kafka_topic_device_registered": ("KAFKA_TOPIC_DEVICE_REGISTERED",),
             "kafka_topic_energy_consumption_recorded": (
                 "KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED",
             ),
@@ -169,6 +181,7 @@ class Settings(BaseSettings):
         topics = [
             self.kafka_topic_reading_ingest,
             self.kafka_topic_anomaly_detected,
+            self.kafka_topic_device_registered,
             self.kafka_topic_energy_consumption_recorded,
             self.kafka_topic_alert_created,
             self.kafka_topic_reading_processed,

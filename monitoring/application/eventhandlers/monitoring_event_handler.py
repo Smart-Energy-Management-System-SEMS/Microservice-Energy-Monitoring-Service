@@ -1,9 +1,10 @@
 import logging
 import asyncio
-from datetime import datetime
 from typing import Dict, Any
 from monitoring.infrastructure.messaging.kafka.kafka_consumer import KafkaConsumer
 from monitoring.infrastructure.configuration.settings import settings
+from monitoring.interfaces.acl.monitoring_acl import MonitoringACL
+from monitoring.application.services.device_simulation_scheduler import DeviceSimulationScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +16,22 @@ class MonitoringEventHandler:
     Analytics Service).
     """
 
-    def __init__(self, kafka_consumer: KafkaConsumer):
+    def __init__(
+        self,
+        kafka_consumer: KafkaConsumer,
+        event_loop: asyncio.AbstractEventLoop,
+        simulation_scheduler: DeviceSimulationScheduler,
+    ):
         self._kafka_consumer = kafka_consumer
+        self._event_loop = event_loop
+        self._simulation_scheduler = simulation_scheduler
 
     def register_handlers(self) -> None:
         """Register all topic handlers with the Kafka consumer."""
+        self._kafka_consumer.register_handler(
+            settings.kafka_topic_device_registered,
+            self._handle_device_registered,
+        )
         self._kafka_consumer.register_handler(
             settings.kafka_topic_reading_ingest,
             self._handle_reading_ingest,
@@ -29,6 +41,23 @@ class MonitoringEventHandler:
             self._handle_anomaly_detected,
         )
         logger.info("MonitoringEventHandler: all Kafka handlers registered.")
+
+    def _handle_device_registered(self, data: Dict[str, Any]) -> None:
+        """Start an automatic simulation loop for newly registered active devices."""
+        registration = MonitoringACL.to_device_registration(data)
+        if registration is None:
+            return
+
+        logger.info(
+            "[Kafka] Device registered received: device_id=%s user_id=%s status=%s",
+            registration.device_id,
+            registration.user_id,
+            registration.status,
+        )
+        asyncio.run_coroutine_threadsafe(
+            self._simulation_scheduler.activate_device(registration),
+            self._event_loop,
+        )
 
     def _handle_reading_ingest(self, data: Dict[str, Any]) -> None:
         """

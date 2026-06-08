@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional
 from monitoring.domain.model.commands.create_energy_reading_command import CreateEnergyReadingCommand
 from monitoring.domain.model.commands.create_consumption_alert_command import CreateConsumptionAlertCommand
 from monitoring.domain.model.entities.consumption_alert import AlertType, AlertSeverity
+from monitoring.application.services.device_simulation_scheduler import SimulatedDeviceRegistration
 
 logger = logging.getLogger(__name__)
 
@@ -67,4 +68,22 @@ class MonitoringACL:
             )
         except (KeyError, ValueError, TypeError) as e:
             logger.error(f"ACL translation error (AnomalyAlert): {e} | data={data}")
+            return None
+
+    @staticmethod
+    def to_device_registration(data: Dict[str, Any]) -> Optional[SimulatedDeviceRegistration]:
+        """
+        Convert a device.registered envelope from Device Management into
+        the internal representation used by the simulation scheduler.
+        """
+        try:
+            payload = data.get("payload") or {}
+            return SimulatedDeviceRegistration(
+                user_id=data["userId"],
+                device_id=data["deviceId"],
+                device_type=payload.get("deviceType", "unknown"),
+                status=payload.get("status", data.get("status", "UNKNOWN")),
+            )
+        except (KeyError, TypeError) as e:
+            logger.error(f"ACL translation error (DeviceRegistration): {e} | data={data}")
             return None

@@ -37,7 +37,24 @@ class MonitoringEventPublisher:
         estimated_cost: float,
         currency: str,
     ) -> None:
-        event = {
+        consumption_event = {
+            "event_id": event_id,
+            "event_type": "energy.consumption.recorded",
+            "user_id": reading.user_id,
+            "device_id": reading.device_id,
+            "power_watts": reading.power_watts,
+            "energy_kwh": reading.energy_kwh,
+            "estimated_cost": estimated_cost,
+            "currency": currency,
+            "timestamp": reading.timestamp.isoformat() if reading.timestamp else None,
+        }
+        if KafkaProducer.publish(settings.kafka_topic_energy_consumption_recorded, consumption_event):
+            logger.info(
+                "Published energy.consumption.recorded for reading_id=%s",
+                reading.id,
+            )
+
+        legacy_event = {
             "event_id": event_id,
             "event_type": "energy.reading.created",
             "user_id": reading.user_id,
@@ -48,7 +65,7 @@ class MonitoringEventPublisher:
             "currency": currency,
             "timestamp": reading.timestamp.isoformat() if reading.timestamp else None,
         }
-        if KafkaProducer.publish(settings.kafka_topic_energy_reading_created, event):
+        if KafkaProducer.publish(settings.kafka_topic_energy_reading_created, legacy_event):
             logger.info(f"Published energy.reading.created for reading_id={reading.id}")
 
     def publish_alert_created(self, alert: ConsumptionAlert) -> None:

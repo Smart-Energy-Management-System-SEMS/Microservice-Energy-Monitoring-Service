@@ -25,10 +25,38 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("KAFKA_BOOTSTRAP_SERVERS", "KAFKA_BROKERS"),
     )
     kafka_group_id: str = Field(default="energy-monitoring-group", env="KAFKA_GROUP_ID")
-    kafka_topic_reading_ingest: str = Field(default="monitoring.reading.ingest", env="KAFKA_TOPIC_READING_INGEST")
-    kafka_topic_anomaly_detected: str = Field(default="analytics.anomaly.detected", env="KAFKA_TOPIC_ANOMALY_DETECTED")
-    kafka_topic_alert_created: str = Field(default="monitoring.alert.created", env="KAFKA_TOPIC_ALERT_CREATED")
-    kafka_topic_reading_processed: str = Field(default="monitoring.reading.processed", env="KAFKA_TOPIC_READING_PROCESSED")
+    kafka_topic_reading_ingest: str = Field(
+        default="monitoring.reading.ingest",
+        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_MONITORING_READING_INGEST",
+            "KAFKA_TOPIC_READING_INGEST",
+        ),
+    )
+    kafka_topic_anomaly_detected: str = Field(
+        default="analytics.anomaly.detected",
+        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
+            "KAFKA_TOPIC_ANOMALY_DETECTED",
+        ),
+    )
+    kafka_topic_energy_consumption_recorded: str = Field(
+        default="energy.consumption.recorded",
+        validation_alias=AliasChoices("KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED"),
+    )
+    kafka_topic_alert_created: str = Field(
+        default="monitoring.alert.created",
+        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
+            "KAFKA_TOPIC_ALERT_CREATED",
+        ),
+    )
+    kafka_topic_reading_processed: str = Field(
+        default="monitoring.reading.processed",
+        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_MONITORING_READING_PROCESSED",
+            "KAFKA_TOPIC_READING_PROCESSED",
+        ),
+    )
     kafka_topic_energy_reading_created: str = Field(
         default="energy.reading.created",
         env="KAFKA_TOPIC_ENERGY_READING_CREATED",
@@ -76,6 +104,7 @@ class Settings(BaseSettings):
             "kafka.sasl_mechanism": "kafka_sasl_mechanism",
             "kafka.topics.reading_ingest": "kafka_topic_reading_ingest",
             "kafka.topics.anomaly_detected": "kafka_topic_anomaly_detected",
+            "kafka.topics.energy_consumption_recorded": "kafka_topic_energy_consumption_recorded",
             "kafka.topics.alert_created": "kafka_topic_alert_created",
             "kafka.topics.reading_processed": "kafka_topic_reading_processed",
             "kafka.topics.energy_reading_created": "kafka_topic_energy_reading_created",
@@ -90,10 +119,25 @@ class Settings(BaseSettings):
             "kafka_group_id": ("KAFKA_GROUP_ID",),
             "kafka_security_protocol": ("KAFKA_SECURITY_PROTOCOL",),
             "kafka_sasl_mechanism": ("KAFKA_SASL_MECHANISM",),
-            "kafka_topic_reading_ingest": ("KAFKA_TOPIC_READING_INGEST",),
-            "kafka_topic_anomaly_detected": ("KAFKA_TOPIC_ANOMALY_DETECTED",),
-            "kafka_topic_alert_created": ("KAFKA_TOPIC_ALERT_CREATED",),
-            "kafka_topic_reading_processed": ("KAFKA_TOPIC_READING_PROCESSED",),
+            "kafka_topic_reading_ingest": (
+                "KAFKA_TOPIC_MONITORING_READING_INGEST",
+                "KAFKA_TOPIC_READING_INGEST",
+            ),
+            "kafka_topic_anomaly_detected": (
+                "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
+                "KAFKA_TOPIC_ANOMALY_DETECTED",
+            ),
+            "kafka_topic_energy_consumption_recorded": (
+                "KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED",
+            ),
+            "kafka_topic_alert_created": (
+                "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
+                "KAFKA_TOPIC_ALERT_CREATED",
+            ),
+            "kafka_topic_reading_processed": (
+                "KAFKA_TOPIC_MONITORING_READING_PROCESSED",
+                "KAFKA_TOPIC_READING_PROCESSED",
+            ),
             "kafka_topic_energy_reading_created": ("KAFKA_TOPIC_ENERGY_READING_CREATED",),
         }
         for source_key, target_attr in mapping.items():
@@ -125,6 +169,7 @@ class Settings(BaseSettings):
         topics = [
             self.kafka_topic_reading_ingest,
             self.kafka_topic_anomaly_detected,
+            self.kafka_topic_energy_consumption_recorded,
             self.kafka_topic_alert_created,
             self.kafka_topic_reading_processed,
             self.kafka_topic_energy_reading_created,

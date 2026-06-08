@@ -24,6 +24,7 @@ KAFKA_PASSWORD=
 DATABASE_URL=
 MONGODB_URI=
 ENVIRONMENT=production
+KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED=energy.consumption.recorded
 KAFKA_TOPIC_ENERGY_READING_CREATED=energy.reading.created
 ```
 
@@ -101,7 +102,7 @@ Evento Kafka publicado al generar una lectura:
 ```json
 {
   "event_id": "uuid",
-  "event_type": "energy.reading.created",
+  "event_type": "energy.consumption.recorded",
   "user_id": "user_001",
   "device_id": "device_001",
   "power_watts": 850,
@@ -127,6 +128,7 @@ El compose deja Kafka accesible de dos formas:
 Ademas, el micro intenta asegurar estos topics al iniciar:
 - `monitoring.reading.ingest`
 - `analytics.anomaly.detected`
+- `energy.consumption.recorded`
 - `monitoring.alert.created`
 - `monitoring.reading.processed`
 - `energy.reading.created`

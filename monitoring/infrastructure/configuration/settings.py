@@ -15,14 +15,14 @@ class Settings(BaseSettings):
     # MongoDB
     mongodb_url: str = Field(
         default="mongodb://localhost:27017",
-        validation_alias=AliasChoices("MONGODB_URL", "MONGODB_URI", "DATABASE_URL"),
+        validation_alias=AliasChoices("MONGODB_URI", "MONGODB_URL", "DATABASE_URL"),
     )
     mongodb_database: str = Field(default="energy_monitoring_db", env="MONGODB_DATABASE")
 
     # Kafka
     kafka_bootstrap_servers: str = Field(
         default="localhost:9092",
-        validation_alias=AliasChoices("KAFKA_BOOTSTRAP_SERVERS", "KAFKA_BROKERS"),
+        validation_alias=AliasChoices("KAFKA_BROKERS", "KAFKA_BOOTSTRAP_SERVERS"),
     )
     kafka_group_id: str = Field(default="energy-monitoring-group", env="KAFKA_GROUP_ID")
     kafka_topic_reading_ingest: str = Field(
@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     )
     cors_allow_origins: str = Field(
         default="http://localhost:3000,http://localhost:5173",
-        env="CORS_ALLOW_ORIGINS",
+        validation_alias=AliasChoices("ALLOWED_ORIGINS", "CORS_ALLOW_ORIGINS"),
     )
 
     class Config:

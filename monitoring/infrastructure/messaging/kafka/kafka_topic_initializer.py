@@ -13,6 +13,14 @@ class KafkaTopicInitializer:
 
     @classmethod
     def ensure_topics_exist(cls) -> None:
+        if not settings.kafka_enable_topic_init:
+            logger.info("Kafka topic initialization disabled by configuration.")
+            return
+
+        if settings.is_event_hubs_kafka():
+            logger.info("Skipping Kafka topic initialization for Azure Event Hubs.")
+            return
+
         topics = settings.get_kafka_topics()
         if not topics:
             logger.warning("No Kafka topics configured for initialization.")

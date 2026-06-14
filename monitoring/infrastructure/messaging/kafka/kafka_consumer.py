@@ -69,7 +69,11 @@ class KafkaConsumer:
                         if handler:
                             for msg in messages:
                                 try:
-                                    handler(msg.value)
+                                    payload = msg.value
+                                    if isinstance(payload, dict):
+                                        payload = dict(payload)
+                                        payload["_topic"] = topic
+                                    handler(payload)
                                 except Exception as e:
                                     logger.error(f"Error handling message from {topic}: {e}", exc_info=True)
                 except KafkaError as e:

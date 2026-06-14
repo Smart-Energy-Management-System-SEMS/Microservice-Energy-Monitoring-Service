@@ -29,21 +29,33 @@ class MonitoringEventHandler:
     def register_handlers(self) -> None:
         """Register all topic handlers with the Kafka consumer."""
         self._kafka_consumer.register_handler(
-            settings.kafka_topic_device_registered,
+            settings.kafka_topic_device_events,
             self._handle_device_registered,
         )
         self._kafka_consumer.register_handler(
-            settings.kafka_topic_reading_ingest,
+            settings.kafka_topic_energy_events,
             self._handle_reading_ingest,
         )
         self._kafka_consumer.register_handler(
-            settings.kafka_topic_anomaly_detected,
+            settings.kafka_topic_analytics_events,
             self._handle_anomaly_detected,
         )
         logger.info("MonitoringEventHandler: all Kafka handlers registered.")
 
+    @staticmethod
+    def _matches_event(data: Dict[str, Any], expected_event_type: str, fallback_topic: str) -> bool:
+        if not isinstance(data, dict):
+            return False
+        event_type = MonitoringACL.get_event_type(data)
+        if event_type:
+            return event_type == expected_event_type
+        return data.get("_topic") == fallback_topic
+
     def _handle_device_registered(self, data: Dict[str, Any]) -> None:
         """Start an automatic simulation loop for newly registered active devices."""
+        if not self._matches_event(data, "device.registered", settings.kafka_topic_device_events):
+            return
+
         registration = MonitoringACL.to_device_registration(data)
         if registration is None:
             return
@@ -66,10 +78,13 @@ class MonitoringEventHandler:
         """
         if not data:
             return
+        if not self._matches_event(data, "energy.reading.ingested", settings.kafka_topic_energy_events):
+            return
+        payload = MonitoringACL.get_event_payload(data)
         logger.info(
             f"[Kafka] EnergyReading ingest received: "
-            f"meter_id={data.get('meter_id')}, "
-            f"power_watts={data.get('power_watts')}"
+            f"meter_id={payload.get('meter_id')}, "
+            f"power_watts={payload.get('power_watts')}"
         )
         # TODO: dispatch to EnergyReadingCommandService via asyncio event loop
         # asyncio.run_coroutine_threadsafe(command_service.handle_create(cmd), loop)
@@ -81,10 +96,13 @@ class MonitoringEventHandler:
         """
         if not data:
             return
+        if not self._matches_event(data, "analytics.anomaly.detected", settings.kafka_topic_analytics_events):
+            return
+        payload = MonitoringACL.get_event_payload(data)
         logger.warning(
             f"[Kafka] Anomaly detected from Analytics: "
-            f"user_id={data.get('user_id')}, "
-            f"device_id={data.get('device_id')}, "
-            f"score={data.get('score')}"
+            f"user_id={payload.get('user_id')}, "
+            f"device_id={payload.get('device_id')}, "
+            f"score={payload.get('score')}"
         )
         # TODO: dispatch to ConsumptionAlertCommandService via asyncio event loop

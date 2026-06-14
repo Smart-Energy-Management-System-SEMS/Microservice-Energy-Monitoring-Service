@@ -20,30 +20,49 @@ class MonitoringACL:
     """Translates external event data into internal domain commands."""
 
     @staticmethod
+    def get_event_type(data: Dict[str, Any]) -> str:
+        if not isinstance(data, dict):
+            return ""
+        return str(data.get("eventType") or data.get("event_type") or "").strip()
+
+    @staticmethod
+    def get_event_payload(data: Dict[str, Any]) -> Dict[str, Any]:
+        if not isinstance(data, dict):
+            return {}
+        payload = data.get("data")
+        if isinstance(payload, dict):
+            return payload
+        payload = data.get("payload")
+        if isinstance(payload, dict):
+            return payload
+        return data
+
+    @staticmethod
     def to_energy_reading_command(data: Dict[str, Any]) -> Optional[CreateEnergyReadingCommand]:
         """
         Convert an inbound IoT telemetry payload into a CreateEnergyReadingCommand.
         Returns None if required fields are missing.
         """
         try:
-            timestamp_raw = data.get("timestamp")
+            payload = MonitoringACL.get_event_payload(data)
+            timestamp_raw = payload.get("timestamp")
             timestamp = (
                 datetime.fromisoformat(timestamp_raw)
                 if isinstance(timestamp_raw, str)
                 else datetime.utcnow()
             )
             return CreateEnergyReadingCommand(
-                user_id=data["user_id"],
-                meter_id=data["meter_id"],
-                device_id=data.get("device_id", "unknown"),
-                power_watts=float(data["power_watts"]),
-                voltage=float(data.get("voltage", 220.0)),
-                current=float(data.get("current", 0.0)),
-                frequency=float(data.get("frequency", 60.0)),
-                energy_kwh=float(data.get("energy_kwh", 0.0)),
+                user_id=payload["user_id"],
+                meter_id=payload["meter_id"],
+                device_id=payload.get("device_id", "unknown"),
+                power_watts=float(payload["power_watts"]),
+                voltage=float(payload.get("voltage", 220.0)),
+                current=float(payload.get("current", 0.0)),
+                frequency=float(payload.get("frequency", 60.0)),
+                energy_kwh=float(payload.get("energy_kwh", 0.0)),
                 timestamp=timestamp,
-                reading_type=data.get("reading_type", "real_time"),
-                phase=data.get("phase", "single"),
+                reading_type=payload.get("reading_type", "real_time"),
+                phase=payload.get("phase", "single"),
             )
         except (KeyError, ValueError, TypeError) as e:
             logger.error(f"ACL translation error (EnergyReading): {e} | data={data}")
@@ -56,15 +75,16 @@ class MonitoringACL:
         into a CreateConsumptionAlertCommand.
         """
         try:
+            payload = MonitoringACL.get_event_payload(data)
             return CreateConsumptionAlertCommand(
-                user_id=data["user_id"],
-                device_id=data.get("device_id", "unknown"),
-                meter_id=data.get("meter_id", "unknown"),
+                user_id=payload["user_id"],
+                device_id=payload.get("device_id", "unknown"),
+                meter_id=payload.get("meter_id", "unknown"),
                 alert_type=AlertType.ANOMALY_DETECTED,
                 severity=AlertSeverity.HIGH,
                 threshold_value=0.0,
-                actual_value=float(data.get("score", 0.0)),
-                message=data.get("description", "Anomaly detected by analytics engine."),
+                actual_value=float(payload.get("score", 0.0)),
+                message=payload.get("description", "Anomaly detected by analytics engine."),
             )
         except (KeyError, ValueError, TypeError) as e:
             logger.error(f"ACL translation error (AnomalyAlert): {e} | data={data}")
@@ -77,10 +97,14 @@ class MonitoringACL:
         the internal representation used by the simulation scheduler.
         """
         try:
-            payload = data.get("payload") or {}
+            payload = MonitoringACL.get_event_payload(data)
+            user_id = data.get("userId") or payload.get("userId") or payload.get("user_id")
+            device_id = data.get("deviceId") or payload.get("deviceId") or payload.get("device_id")
+            if not user_id or not device_id:
+                raise KeyError("userId/deviceId")
             return SimulatedDeviceRegistration(
-                user_id=data["userId"],
-                device_id=data["deviceId"],
+                user_id=user_id,
+                device_id=device_id,
                 device_type=payload.get("deviceType", "unknown"),
                 status=payload.get("status", data.get("status", "UNKNOWN")),
             )

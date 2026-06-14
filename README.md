@@ -16,7 +16,7 @@ Usa `.env.example` como base. Variables principales para local/Docker/Azure:
 ```env
 PORT=8080
 CONFIG_SERVICE_URL=
-KAFKA_BROKERS=localhost:29092
+KAFKA_BROKERS=kafka:9092
 KAFKA_SECURITY_PROTOCOL=
 KAFKA_SASL_MECHANISM=
 KAFKA_USERNAME=
@@ -24,14 +24,19 @@ KAFKA_PASSWORD=
 DATABASE_URL=
 MONGODB_URI=
 ENVIRONMENT=production
-KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED=energy.consumption.recorded
-KAFKA_TOPIC_ENERGY_READING_CREATED=energy.reading.created
+KAFKA_TOPIC_DEVICE_EVENTS=device.events
+KAFKA_TOPIC_ENERGY_EVENTS=energy.events
+KAFKA_TOPIC_ANALYTICS_EVENTS=analytics.events
+KAFKA_TOPIC_ALERTS_EVENTS=alerts.events
+KAFKA_ENABLE_TOPIC_INIT=true
 ```
 
 Notas:
-- Si corres `python main.py` en tu host y Kafka en `docker-compose`, usa `KAFKA_BROKERS=localhost:29092`.
 - Si corres este micro dentro de `docker-compose`, usa `KAFKA_BROKERS=kafka:9092`.
-- En Azure Container Apps no uses `localhost` para servicios externos (Kafka, Config Service, MongoDB).
+- Para Azure Event Hubs usa `KAFKA_BROKERS=<namespace>.servicebus.windows.net:9093`, `KAFKA_SECURITY_PROTOCOL=SASL_SSL`, `KAFKA_SASL_MECHANISM=PLAIN`, `KAFKA_USERNAME=$ConnectionString` y `KAFKA_ENABLE_TOPIC_INIT=false`.
+- Este micro publica `energy.reading.created` y `energy.consumption.recorded` dentro de `energy.events`.
+- Este micro publica `energy.reading.processed` dentro de `energy.events` y `alert.created` dentro de `alerts.events`.
+- Consume `device.events`, `energy.events` y `analytics.events`, filtrando por `eventType`.
 - El servicio acepta aliases legacy (`APP_PORT`, `APP_ENV`, `KAFKA_BOOTSTRAP_SERVERS`, `MONGODB_URL`, etc.) para compatibilidad.
 - Al arrancar, el servicio intenta crear automaticamente los topics Kafka que necesita.
 
@@ -101,15 +106,29 @@ Evento Kafka publicado al generar una lectura:
 
 ```json
 {
-  "event_id": "uuid",
-  "event_type": "energy.consumption.recorded",
+  "eventId": "uuid",
+  "eventType": "energy.consumption.recorded",
+  "occurredAt": "2026-06-12T22:30:00Z",
   "user_id": "user_001",
   "device_id": "device_001",
+  "reading_id": "reading_001",
+  "meter_id": "sim-meter-device_001",
   "power_watts": 850,
   "energy_kwh": 1.25,
   "estimated_cost": 0.94,
   "currency": "PEN",
-  "timestamp": "2026-06-02T20:15:00+00:00"
+  "timestamp": "2026-06-02T20:15:00+00:00",
+  "data": {
+    "user_id": "user_001",
+    "device_id": "device_001",
+    "reading_id": "reading_001",
+    "meter_id": "sim-meter-device_001",
+    "power_watts": 850,
+    "energy_kwh": 1.25,
+    "estimated_cost": 0.94,
+    "currency": "PEN",
+    "timestamp": "2026-06-02T20:15:00+00:00"
+  }
 }
 ```
 
@@ -121,17 +140,13 @@ Con `docker-compose.yml`:
 docker compose up -d kafka zookeeper kafka-init
 ```
 
-El compose deja Kafka accesible de dos formas:
-- `localhost:29092` para procesos que corren en tu host.
-- `kafka:9092` para contenedores dentro de la misma red Docker.
+El compose deja Kafka accesible por `kafka:9092` dentro de la red Docker y anuncia `host.docker.internal:29092` como listener externo.
 
 Ademas, el micro intenta asegurar estos topics al iniciar:
-- `monitoring.reading.ingest`
-- `analytics.anomaly.detected`
-- `energy.consumption.recorded`
-- `monitoring.alert.created`
-- `monitoring.reading.processed`
-- `energy.reading.created`
+- `device.events`
+- `energy.events`
+- `analytics.events`
+- `alerts.events`
 
 Construir imagen:
 
@@ -151,7 +166,7 @@ docker run --rm -p 8080:8080 --env-file .env energy-monitoring-service:latest
 2. Crea/actualiza la Container App usando esa imagen.
 3. Configura variables de entorno y secretos en la Container App.
 4. Define `PORT=8080` en la app.
-5. Configura `CONFIG_SERVICE_URL`, `KAFKA_BROKERS`, `MONGODB_URI` con endpoints reales de Azure/red privada (no `localhost`).
+5. Configura `CONFIG_SERVICE_URL`, `KAFKA_BROKERS`, `MONGODB_URI` con endpoints reales de Azure/red privada.
 
 Ejemplo de despliegue (CLI):
 

@@ -14,58 +14,51 @@ class Settings(BaseSettings):
 
     # MongoDB
     mongodb_url: str = Field(
-        default="mongodb://localhost:27017",
+        default="mongodb://mongodb:27017",
         validation_alias=AliasChoices("MONGODB_URI", "MONGODB_URL", "DATABASE_URL"),
     )
     mongodb_database: str = Field(default="energy_monitoring_db", env="MONGODB_DATABASE")
 
     # Kafka
     kafka_bootstrap_servers: str = Field(
-        default="localhost:9092",
+        default="kafka:9092",
         validation_alias=AliasChoices("KAFKA_BROKERS", "KAFKA_BOOTSTRAP_SERVERS"),
     )
     kafka_group_id: str = Field(default="energy-monitoring-group", env="KAFKA_GROUP_ID")
-    kafka_topic_reading_ingest: str = Field(
-        default="monitoring.reading.ingest",
+    kafka_topic_device_events: str = Field(
+        default="device.events",
         validation_alias=AliasChoices(
-            "KAFKA_TOPIC_MONITORING_READING_INGEST",
-            "KAFKA_TOPIC_READING_INGEST",
-        ),
-    )
-    kafka_topic_anomaly_detected: str = Field(
-        default="analytics.anomaly.detected",
-        validation_alias=AliasChoices(
-            "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
-            "KAFKA_TOPIC_ANOMALY_DETECTED",
-        ),
-    )
-    kafka_topic_device_registered: str = Field(
-        default="device.registered",
-        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_DEVICE_EVENTS",
             "KAFKA_TOPIC_DEVICE_REGISTERED",
         ),
     )
-    kafka_topic_energy_consumption_recorded: str = Field(
-        default="energy.consumption.recorded",
-        validation_alias=AliasChoices("KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED"),
-    )
-    kafka_topic_alert_created: str = Field(
-        default="monitoring.alert.created",
+    kafka_topic_energy_events: str = Field(
+        default="energy.events",
         validation_alias=AliasChoices(
-            "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
-            "KAFKA_TOPIC_ALERT_CREATED",
-        ),
-    )
-    kafka_topic_reading_processed: str = Field(
-        default="monitoring.reading.processed",
-        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_ENERGY_EVENTS",
+            "KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED",
+            "KAFKA_TOPIC_ENERGY_READING_CREATED",
+            "KAFKA_TOPIC_MONITORING_READING_INGEST",
+            "KAFKA_TOPIC_READING_INGEST",
             "KAFKA_TOPIC_MONITORING_READING_PROCESSED",
             "KAFKA_TOPIC_READING_PROCESSED",
         ),
     )
-    kafka_topic_energy_reading_created: str = Field(
-        default="energy.reading.created",
-        env="KAFKA_TOPIC_ENERGY_READING_CREATED",
+    kafka_topic_analytics_events: str = Field(
+        default="analytics.events",
+        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_ANALYTICS_EVENTS",
+            "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
+            "KAFKA_TOPIC_ANOMALY_DETECTED",
+        ),
+    )
+    kafka_topic_alerts_events: str = Field(
+        default="alerts.events",
+        validation_alias=AliasChoices(
+            "KAFKA_TOPIC_ALERTS_EVENTS",
+            "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
+            "KAFKA_TOPIC_ALERT_CREATED",
+        ),
     )
     kafka_security_protocol: str = Field(default="PLAINTEXT", env="KAFKA_SECURITY_PROTOCOL")
     kafka_sasl_mechanism: str | None = Field(default=None, env="KAFKA_SASL_MECHANISM")
@@ -77,6 +70,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("KAFKA_SASL_PASSWORD", "KAFKA_PASSWORD"),
     )
+    kafka_enable_topic_init: bool = Field(default=True, env="KAFKA_ENABLE_TOPIC_INIT")
 
     # App
     app_host: str = Field(default="0.0.0.0", env="APP_HOST")
@@ -88,7 +82,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("DEVICE_SIMULATION_INTERVAL_SECONDS"),
     )
     cors_allow_origins: str = Field(
-        default="http://localhost:3000,http://localhost:5173",
+        default="https://frontend.example.com",
         validation_alias=AliasChoices("ALLOWED_ORIGINS", "CORS_ALLOW_ORIGINS"),
     )
 
@@ -112,13 +106,14 @@ class Settings(BaseSettings):
             "kafka.group_id": "kafka_group_id",
             "kafka.security_protocol": "kafka_security_protocol",
             "kafka.sasl_mechanism": "kafka_sasl_mechanism",
-            "kafka.topics.reading_ingest": "kafka_topic_reading_ingest",
-            "kafka.topics.anomaly_detected": "kafka_topic_anomaly_detected",
-            "kafka.topics.device_registered": "kafka_topic_device_registered",
-            "kafka.topics.energy_consumption_recorded": "kafka_topic_energy_consumption_recorded",
-            "kafka.topics.alert_created": "kafka_topic_alert_created",
-            "kafka.topics.reading_processed": "kafka_topic_reading_processed",
-            "kafka.topics.energy_reading_created": "kafka_topic_energy_reading_created",
+            "kafka.topics.device_events": "kafka_topic_device_events",
+            "kafka.topics.energy_events": "kafka_topic_energy_events",
+            "kafka.topics.analytics_events": "kafka_topic_analytics_events",
+            "kafka.topics.anomaly_detected": "kafka_topic_analytics_events",
+            "kafka.topics.alerts_events": "kafka_topic_alerts_events",
+            "kafka.topics.alert_created": "kafka_topic_alerts_events",
+            "kafka.topics.reading_ingest": "kafka_topic_energy_events",
+            "kafka.topics.reading_processed": "kafka_topic_energy_events",
         }
         env_by_attr = {
             "app_host": ("APP_HOST",),
@@ -130,27 +125,29 @@ class Settings(BaseSettings):
             "kafka_group_id": ("KAFKA_GROUP_ID",),
             "kafka_security_protocol": ("KAFKA_SECURITY_PROTOCOL",),
             "kafka_sasl_mechanism": ("KAFKA_SASL_MECHANISM",),
-            "kafka_topic_reading_ingest": (
+            "kafka_topic_device_events": (
+                "KAFKA_TOPIC_DEVICE_EVENTS",
+                "KAFKA_TOPIC_DEVICE_REGISTERED",
+            ),
+            "kafka_topic_energy_events": (
+                "KAFKA_TOPIC_ENERGY_EVENTS",
+                "KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED",
+                "KAFKA_TOPIC_ENERGY_READING_CREATED",
                 "KAFKA_TOPIC_MONITORING_READING_INGEST",
                 "KAFKA_TOPIC_READING_INGEST",
-            ),
-            "kafka_topic_anomaly_detected": (
-                "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
-                "KAFKA_TOPIC_ANOMALY_DETECTED",
-            ),
-            "kafka_topic_device_registered": ("KAFKA_TOPIC_DEVICE_REGISTERED",),
-            "kafka_topic_energy_consumption_recorded": (
-                "KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED",
-            ),
-            "kafka_topic_alert_created": (
-                "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
-                "KAFKA_TOPIC_ALERT_CREATED",
-            ),
-            "kafka_topic_reading_processed": (
                 "KAFKA_TOPIC_MONITORING_READING_PROCESSED",
                 "KAFKA_TOPIC_READING_PROCESSED",
             ),
-            "kafka_topic_energy_reading_created": ("KAFKA_TOPIC_ENERGY_READING_CREATED",),
+            "kafka_topic_analytics_events": (
+                "KAFKA_TOPIC_ANALYTICS_EVENTS",
+                "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
+                "KAFKA_TOPIC_ANOMALY_DETECTED",
+            ),
+            "kafka_topic_alerts_events": (
+                "KAFKA_TOPIC_ALERTS_EVENTS",
+                "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
+                "KAFKA_TOPIC_ALERT_CREATED",
+            ),
         }
         for source_key, target_attr in mapping.items():
             env_names = env_by_attr.get(target_attr, ())
@@ -179,15 +176,15 @@ class Settings(BaseSettings):
 
     def get_kafka_topics(self) -> list[str]:
         topics = [
-            self.kafka_topic_reading_ingest,
-            self.kafka_topic_anomaly_detected,
-            self.kafka_topic_device_registered,
-            self.kafka_topic_energy_consumption_recorded,
-            self.kafka_topic_alert_created,
-            self.kafka_topic_reading_processed,
-            self.kafka_topic_energy_reading_created,
+            self.kafka_topic_device_events,
+            self.kafka_topic_energy_events,
+            self.kafka_topic_analytics_events,
+            self.kafka_topic_alerts_events,
         ]
         return list(dict.fromkeys(topic for topic in topics if topic))
+
+    def is_event_hubs_kafka(self) -> bool:
+        return any(".servicebus.windows.net" in server for server in self.get_kafka_bootstrap_servers())
 
 
 settings = Settings()

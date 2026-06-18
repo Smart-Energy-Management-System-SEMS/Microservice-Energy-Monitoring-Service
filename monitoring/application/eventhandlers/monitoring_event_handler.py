@@ -43,17 +43,15 @@ class MonitoringEventHandler:
         logger.info("MonitoringEventHandler: all Kafka handlers registered.")
 
     @staticmethod
-    def _matches_event(data: Dict[str, Any], expected_event_type: str, fallback_topic: str) -> bool:
+    def _matches_event(data: Dict[str, Any], expected_event_type: str) -> bool:
         if not isinstance(data, dict):
             return False
         event_type = MonitoringACL.get_event_type(data)
-        if event_type:
-            return event_type == expected_event_type
-        return data.get("_topic") == fallback_topic
+        return event_type == expected_event_type
 
     def _handle_device_registered(self, data: Dict[str, Any]) -> None:
         """Start an automatic simulation loop for newly registered active devices."""
-        if not self._matches_event(data, "device.registered", settings.kafka_topic_device_events):
+        if not self._matches_event(data, "device.registered"):
             return
 
         registration = MonitoringACL.to_device_registration(data)
@@ -78,7 +76,7 @@ class MonitoringEventHandler:
         """
         if not data:
             return
-        if not self._matches_event(data, "energy.reading.ingested", settings.kafka_topic_energy_events):
+        if not self._matches_event(data, "energy.reading.ingested"):
             return
         payload = MonitoringACL.get_event_payload(data)
         logger.info(
@@ -96,7 +94,7 @@ class MonitoringEventHandler:
         """
         if not data:
             return
-        if not self._matches_event(data, "analytics.anomaly.detected", settings.kafka_topic_analytics_events):
+        if not self._matches_event(data, "analytics.anomaly.detected"):
             return
         payload = MonitoringACL.get_event_payload(data)
         logger.warning(

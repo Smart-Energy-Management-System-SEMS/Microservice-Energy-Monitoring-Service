@@ -27,38 +27,19 @@ class Settings(BaseSettings):
     kafka_group_id: str = Field(default="energy-monitoring-group", env="KAFKA_GROUP_ID")
     kafka_topic_device_events: str = Field(
         default="device.events",
-        validation_alias=AliasChoices(
-            "KAFKA_TOPIC_DEVICE_EVENTS",
-            "KAFKA_TOPIC_DEVICE_REGISTERED",
-        ),
+        validation_alias=AliasChoices("KAFKA_TOPIC_DEVICE_EVENTS"),
     )
     kafka_topic_energy_events: str = Field(
         default="energy.events",
-        validation_alias=AliasChoices(
-            "KAFKA_TOPIC_ENERGY_EVENTS",
-            "KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED",
-            "KAFKA_TOPIC_ENERGY_READING_CREATED",
-            "KAFKA_TOPIC_MONITORING_READING_INGEST",
-            "KAFKA_TOPIC_READING_INGEST",
-            "KAFKA_TOPIC_MONITORING_READING_PROCESSED",
-            "KAFKA_TOPIC_READING_PROCESSED",
-        ),
+        validation_alias=AliasChoices("KAFKA_TOPIC_ENERGY_EVENTS"),
     )
     kafka_topic_analytics_events: str = Field(
         default="analytics.events",
-        validation_alias=AliasChoices(
-            "KAFKA_TOPIC_ANALYTICS_EVENTS",
-            "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
-            "KAFKA_TOPIC_ANOMALY_DETECTED",
-        ),
+        validation_alias=AliasChoices("KAFKA_TOPIC_ANALYTICS_EVENTS"),
     )
     kafka_topic_alerts_events: str = Field(
         default="alerts.events",
-        validation_alias=AliasChoices(
-            "KAFKA_TOPIC_ALERTS_EVENTS",
-            "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
-            "KAFKA_TOPIC_ALERT_CREATED",
-        ),
+        validation_alias=AliasChoices("KAFKA_TOPIC_ALERTS_EVENTS"),
     )
     kafka_security_protocol: str = Field(default="PLAINTEXT", env="KAFKA_SECURITY_PROTOCOL")
     kafka_sasl_mechanism: str | None = Field(default=None, env="KAFKA_SASL_MECHANISM")
@@ -109,11 +90,7 @@ class Settings(BaseSettings):
             "kafka.topics.device_events": "kafka_topic_device_events",
             "kafka.topics.energy_events": "kafka_topic_energy_events",
             "kafka.topics.analytics_events": "kafka_topic_analytics_events",
-            "kafka.topics.anomaly_detected": "kafka_topic_analytics_events",
             "kafka.topics.alerts_events": "kafka_topic_alerts_events",
-            "kafka.topics.alert_created": "kafka_topic_alerts_events",
-            "kafka.topics.reading_ingest": "kafka_topic_energy_events",
-            "kafka.topics.reading_processed": "kafka_topic_energy_events",
         }
         env_by_attr = {
             "app_host": ("APP_HOST",),
@@ -127,26 +104,15 @@ class Settings(BaseSettings):
             "kafka_sasl_mechanism": ("KAFKA_SASL_MECHANISM",),
             "kafka_topic_device_events": (
                 "KAFKA_TOPIC_DEVICE_EVENTS",
-                "KAFKA_TOPIC_DEVICE_REGISTERED",
             ),
             "kafka_topic_energy_events": (
                 "KAFKA_TOPIC_ENERGY_EVENTS",
-                "KAFKA_TOPIC_ENERGY_CONSUMPTION_RECORDED",
-                "KAFKA_TOPIC_ENERGY_READING_CREATED",
-                "KAFKA_TOPIC_MONITORING_READING_INGEST",
-                "KAFKA_TOPIC_READING_INGEST",
-                "KAFKA_TOPIC_MONITORING_READING_PROCESSED",
-                "KAFKA_TOPIC_READING_PROCESSED",
             ),
             "kafka_topic_analytics_events": (
                 "KAFKA_TOPIC_ANALYTICS_EVENTS",
-                "KAFKA_TOPIC_ANALYTICS_ANOMALY_DETECTED",
-                "KAFKA_TOPIC_ANOMALY_DETECTED",
             ),
             "kafka_topic_alerts_events": (
                 "KAFKA_TOPIC_ALERTS_EVENTS",
-                "KAFKA_TOPIC_MONITORING_ALERT_CREATED",
-                "KAFKA_TOPIC_ALERT_CREATED",
             ),
         }
         for source_key, target_attr in mapping.items():

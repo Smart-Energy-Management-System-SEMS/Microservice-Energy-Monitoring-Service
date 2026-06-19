@@ -28,8 +28,14 @@ class KafkaConsumer:
 
     def _build_consumer(self) -> _KafkaConsumer:
         topics = list(self._handlers.keys())
+        logger.info(
+            "Initializing Kafka consumer. bootstrap_servers=%s group_id=%s topics=%s",
+            settings.get_kafka_bootstrap_servers(),
+            settings.kafka_group_id,
+            topics,
+        )
         kwargs = {
-            "bootstrap_servers": settings.kafka_bootstrap_servers.split(","),
+            "bootstrap_servers": settings.get_kafka_bootstrap_servers(),
             "group_id": settings.kafka_group_id,
             "auto_offset_reset": "earliest",
             "enable_auto_commit": True,
@@ -63,7 +69,11 @@ class KafkaConsumer:
                         if handler:
                             for msg in messages:
                                 try:
-                                    handler(msg.value)
+                                    payload = msg.value
+                                    if isinstance(payload, dict):
+                                        payload = dict(payload)
+                                        payload["_topic"] = topic
+                                    handler(payload)
                                 except Exception as e:
                                     logger.error(f"Error handling message from {topic}: {e}", exc_info=True)
                 except KafkaError as e:

@@ -1,8 +1,13 @@
 __pycache__/
 *.py[cod]
 .env
+.env.*
 *.log
 .venv/
 venv/
 .git/
 .idea/
+*.md
+tests/
+dist/
+build/

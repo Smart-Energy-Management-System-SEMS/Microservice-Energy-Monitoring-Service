@@ -1,3 +1,5 @@
+# Interfaces layer: the REST endpoints (URLs) for energy readings.
+# This is the "door" between the web and our application services.
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,6 +17,7 @@ from monitoring.interfaces.rest.controllers.dependencies import (
     get_reading_command_service, get_reading_query_service
 )
 
+# All URLs here start with /energy-readings.
 router = APIRouter(prefix="/energy-readings", tags=["Energy Readings"])
 
 
@@ -23,6 +26,7 @@ async def create_energy_reading(
     request: CreateEnergyReadingRequest,
     command_service: EnergyReadingCommandService = Depends(get_reading_command_service),
 ) -> EnergyReadingResponse:
+    """POST /energy-readings -> save a new reading."""
     command = CreateEnergyReadingCommand(
         user_id=request.user_id,
         meter_id=request.meter_id,
@@ -47,6 +51,7 @@ async def get_readings_by_user(
     skip: int = Query(default=0, ge=0),
     query_service: EnergyReadingQueryService = Depends(get_reading_query_service),
 ) -> List[EnergyReadingResponse]:
+    """GET /energy-readings/user/{user_id} -> all readings of a user."""
     readings = await query_service.get_by_user(GetByUserQuery(user_id=user_id, limit=limit, skip=skip))
     return [EnergyReadingTransform.to_response(r) for r in readings]
 
@@ -59,6 +64,7 @@ async def get_readings_by_device(
     skip: int = Query(default=0, ge=0),
     query_service: EnergyReadingQueryService = Depends(get_reading_query_service),
 ) -> List[EnergyReadingResponse]:
+    """GET /energy-readings/device/{device_id} -> all readings of a device."""
     readings = await query_service.get_by_device(
         GetByDeviceQuery(device_id=device_id, user_id=user_id, limit=limit, skip=skip)
     )
@@ -74,6 +80,7 @@ async def get_readings_by_date_range(
     limit: int = Query(default=100, ge=1, le=500),
     query_service: EnergyReadingQueryService = Depends(get_reading_query_service),
 ) -> List[EnergyReadingResponse]:
+    """GET /energy-readings/range -> readings between two dates."""
     readings = await query_service.get_by_date_range(
         GetByDateRangeQuery(user_id=user_id, start_date=start_date, end_date=end_date,
                             device_id=device_id, limit=limit)
@@ -86,8 +93,10 @@ async def get_latest_by_meter(
     meter_id: str,
     query_service: EnergyReadingQueryService = Depends(get_reading_query_service),
 ) -> EnergyReadingResponse:
+    """GET /energy-readings/meter/{meter_id}/latest -> newest reading of a meter."""
     reading = await query_service.get_latest_by_meter(meter_id)
     if not reading:
+        # Nothing found -> return 404 Not Found.
         raise HTTPException(status_code=404, detail=f"No readings found for meter '{meter_id}'")
     return EnergyReadingTransform.to_response(reading)
 
@@ -97,7 +106,9 @@ async def get_reading_by_id(
     reading_id: str,
     query_service: EnergyReadingQueryService = Depends(get_reading_query_service),
 ) -> EnergyReadingResponse:
+    """GET /energy-readings/{reading_id} -> one reading by its id."""
     reading = await query_service.get_by_id(reading_id)
     if not reading:
+        # Nothing found -> return 404 Not Found.
         raise HTTPException(status_code=404, detail=f"Reading '{reading_id}' not found")
     return EnergyReadingTransform.to_response(reading)

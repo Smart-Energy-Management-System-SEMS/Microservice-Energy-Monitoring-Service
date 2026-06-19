@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,13 +10,17 @@ from monitoring.infrastructure.configuration.config_service_client import Config
 from monitoring.infrastructure.persistence.mongodb.configuration.mongodb_client import MongoDBClient
 from monitoring.infrastructure.messaging.kafka.kafka_consumer import KafkaConsumer
 from monitoring.infrastructure.messaging.kafka.kafka_producer import KafkaProducer
+from monitoring.infrastructure.messaging.kafka.kafka_topic_initializer import KafkaTopicInitializer
 from monitoring.application.eventhandlers.monitoring_event_handler import MonitoringEventHandler
+from monitoring.application.services.device_simulation_scheduler import DeviceSimulationScheduler
 
 from monitoring.interfaces.rest.controllers.health_controller import router as health_router
 from monitoring.interfaces.rest.controllers.energy_reading_controller import router as reading_router
+from monitoring.interfaces.rest.controllers.energy_simulation_controller import router as energy_simulation_router
 from monitoring.interfaces.rest.controllers.device_consumption_controller import router as consumption_router
 from monitoring.interfaces.rest.controllers.consumption_alert_controller import router as alert_router
 from monitoring.interfaces.rest.controllers.energy_meter_controller import router as meter_router
+from monitoring.interfaces.rest.controllers.dependencies import get_energy_simulation_command_service
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +29,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 kafka_consumer = KafkaConsumer()
+device_simulation_scheduler = DeviceSimulationScheduler(
+    get_energy_simulation_command_service(),
+    settings.device_simulation_interval_seconds,
+)
 
 
 @asynccontextmanager
@@ -38,8 +47,19 @@ async def lifespan(app: FastAPI):
     MongoDBClient.get_database()
     logger.info("MongoDB client initialized.")
 
+    logger.info(
+        "Kafka configuration resolved. bootstrap_servers=%s topics=%s",
+        settings.get_kafka_bootstrap_servers(),
+        settings.get_kafka_topics(),
+    )
+    KafkaTopicInitializer.ensure_topics_exist()
+
     # Register and start Kafka consumer
-    event_handler = MonitoringEventHandler(kafka_consumer)
+    event_handler = MonitoringEventHandler(
+        kafka_consumer,
+        asyncio.get_running_loop(),
+        device_simulation_scheduler,
+    )
     event_handler.register_handlers()
     kafka_consumer.start()
     logger.info("Kafka consumer started.")
@@ -48,6 +68,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     kafka_consumer.stop()
+    await device_simulation_scheduler.stop_all()
     KafkaProducer.close()
     await MongoDBClient.close()
     logger.info("=== Microservice-Energy-Monitoring-Service shut down ===")
@@ -76,6 +97,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(health_router, prefix=settings.api_base_path)
+app.include_router(energy_simulation_router, prefix=settings.api_base_path)
 app.include_router(reading_router, prefix=settings.api_base_path)
 app.include_router(consumption_router, prefix=settings.api_base_path)
 app.include_router(alert_router, prefix=settings.api_base_path)

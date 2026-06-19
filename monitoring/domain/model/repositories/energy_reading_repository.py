@@ -33,3 +33,11 @@ class EnergyReadingRepository(ABC):
     @abstractmethod
     async def find_latest_by_meter(self, meter_id: str) -> Optional[EnergyReading]:
         pass
+
+    @abstractmethod
+    async def find_latest_by_device(self, device_id: str) -> Optional[EnergyReading]:
+        pass
+
+    @abstractmethod
+    async def find_history_by_device(self, device_id: str, limit: int = 50, skip: int = 0) -> List[EnergyReading]:
+        pass

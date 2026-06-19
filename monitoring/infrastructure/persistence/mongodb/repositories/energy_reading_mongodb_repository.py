@@ -52,3 +52,11 @@ class EnergyReadingMongoDBRepository(BaseMongoDBRepository, EnergyReadingReposit
     async def find_latest_by_meter(self, meter_id: str) -> Optional[EnergyReading]:
         docs = await self._find_many({"meter_id": meter_id}, limit=1, sort_field="timestamp")
         return EnergyReadingDocumentMapper.to_entity(docs[0]) if docs else None
+
+    async def find_latest_by_device(self, device_id: str) -> Optional[EnergyReading]:
+        docs = await self._find_many({"device_id": device_id}, limit=1, sort_field="timestamp")
+        return EnergyReadingDocumentMapper.to_entity(docs[0]) if docs else None
+
+    async def find_history_by_device(self, device_id: str, limit: int = 50, skip: int = 0) -> List[EnergyReading]:
+        docs = await self._find_many({"device_id": device_id}, limit=limit, skip=skip, sort_field="timestamp")
+        return [EnergyReadingDocumentMapper.to_entity(d) for d in docs]

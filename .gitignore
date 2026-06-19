@@ -8,6 +8,10 @@ env/
 venv/
 .venv/
 .env
+.env.local
+.env.*.local
+.env.local-kafka
+.env.azure-eventhubs
 *.egg
 *.egg-info/
 dist/

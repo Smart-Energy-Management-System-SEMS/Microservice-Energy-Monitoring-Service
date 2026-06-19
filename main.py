@@ -83,6 +83,9 @@ app = FastAPI(
         "Built with DDD + Hexagonal Architecture, FastAPI, MongoDB and Kafka."
     ),
     version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
     lifespan=lifespan,
 )
 
@@ -102,6 +105,14 @@ app.include_router(reading_router, prefix=settings.api_base_path)
 app.include_router(consumption_router, prefix=settings.api_base_path)
 app.include_router(alert_router, prefix=settings.api_base_path)
 app.include_router(meter_router, prefix=settings.api_base_path)
+
+logger.info(
+    "Swagger UI enabled at http://%s:%s/docs and OpenAPI at http://%s:%s/openapi.json",
+    settings.app_host,
+    settings.app_port,
+    settings.app_host,
+    settings.app_port,
+)
 
 if __name__ == "__main__":
     uvicorn.run(

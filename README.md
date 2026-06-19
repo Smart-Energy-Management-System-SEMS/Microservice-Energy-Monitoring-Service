@@ -11,10 +11,16 @@ Incluye una simulacion interna para EOS IoT y Plus Energia. No hace llamadas rea
 
 ## Variables de entorno
 
-Usa `.env.example` como base. Variables principales para local/Docker/Azure:
+Se dejaron tres archivos para cambiar rapido entre modos:
+
+- `.env`: archivo activo, actualmente configurado para probar Azure Event Hubs desde local
+- `.env.local-kafka`: perfil para Kafka local en `localhost:9092`
+- `.env.azure-eventhubs`: perfil para Azure Event Hubs en `:9093`
+
+Usa `.env.example` como base de referencia. Variables principales para local/Docker/Azure:
 
 ```env
-PORT=8080
+APP_PORT=8001
 CONFIG_SERVICE_URL=
 KAFKA_BROKERS=kafka:9092
 KAFKA_SECURITY_PROTOCOL=
@@ -40,6 +46,11 @@ Notas:
 - El servicio acepta aliases legacy (`APP_PORT`, `APP_ENV`, `KAFKA_BOOTSTRAP_SERVERS`, `MONGODB_URL`, etc.) para compatibilidad.
 - Al arrancar, el servicio intenta crear automaticamente los topics Kafka que necesita.
 
+Para cambiar de modo:
+
+1. Copia el contenido de `.env.local-kafka` sobre `.env` si quieres volver a Kafka local.
+2. Copia el contenido de `.env.azure-eventhubs` sobre `.env` si quieres probar Azure Event Hubs.
+
 ## Ejecucion local
 
 ```bash
@@ -51,13 +62,21 @@ python main.py
 Base URL local:
 
 ```text
-http://localhost:8080
+http://localhost:8001
 ```
 
 Health check:
 
 ```text
 GET /api/v1/health
+```
+
+Swagger / OpenAPI:
+
+```text
+GET /docs
+GET /openapi.json
+GET /redoc
 ```
 
 ## Endpoints de simulacion
@@ -142,6 +161,8 @@ docker compose up -d kafka zookeeper kafka-init
 
 El compose deja Kafka accesible por `kafka:9092` dentro de la red Docker y anuncia `host.docker.internal:29092` como listener externo.
 
+Si corres el micro fuera de Docker contra tu broker local, usa `.env.local-kafka` con `localhost:9092`.
+
 Ademas, el micro intenta asegurar estos topics al iniciar:
 - `device.events`
 - `energy.events`
@@ -157,7 +178,7 @@ docker build -t energy-monitoring-service:latest .
 Ejecutar contenedor:
 
 ```bash
-docker run --rm -p 8080:8080 --env-file .env energy-monitoring-service:latest
+docker run --rm -p 8001:8001 --env-file .env energy-monitoring-service:latest
 ```
 
 ## Azure Container Apps
@@ -165,7 +186,7 @@ docker run --rm -p 8080:8080 --env-file .env energy-monitoring-service:latest
 1. Publica la imagen en ACR (o Docker Hub).
 2. Crea/actualiza la Container App usando esa imagen.
 3. Configura variables de entorno y secretos en la Container App.
-4. Define `PORT=8080` en la app.
+4. Define `APP_PORT=8001` en la app.
 5. Configura `CONFIG_SERVICE_URL`, `KAFKA_BROKERS`, `MONGODB_URI` con endpoints reales de Azure/red privada.
 
 Ejemplo de despliegue (CLI):
@@ -176,9 +197,18 @@ az containerapp create \
   --resource-group <resource-group> \
   --environment <aca-environment> \
   --image <registry>/energy-monitoring-service:latest \
-  --target-port 8080 \
+  --target-port 8001 \
   --ingress external \
-  --env-vars PORT=8080 ENVIRONMENT=production CONFIG_SERVICE_URL=<config-service-url> KAFKA_BROKERS=<kafka-brokers> KAFKA_SECURITY_PROTOCOL=<protocol> KAFKA_SASL_MECHANISM=<mechanism> MONGODB_URI=<mongodb-uri>
+  --env-vars APP_PORT=8001 ENVIRONMENT=production CONFIG_SERVICE_URL=<config-service-url> KAFKA_BROKERS=<kafka-brokers> KAFKA_SECURITY_PROTOCOL=<protocol> KAFKA_SASL_MECHANISM=<mechanism> MONGODB_URI=<mongodb-uri>
 ```
 
 Si manejas credenciales sensibles, usa secretos de Azure Container Apps y referencia esos secretos desde variables de entorno.
+
+## Prueba local con Azure Event Hubs
+
+1. Deja `.env` apuntando a Azure Event Hubs.
+2. Instala dependencias con `pip install -r requirements.txt`.
+3. Levanta el micro con `python main.py`.
+4. Abre `http://localhost:8001/docs`.
+5. Ejecuta un endpoint que publique en `energy.events`.
+6. Revisa logs para confirmar publicacion y consumo.
